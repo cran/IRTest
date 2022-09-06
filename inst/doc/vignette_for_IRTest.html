@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>IRT without the normality assumption</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">IRT without the normality assumption</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(IRTest)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code></pre></div>
+<p><br />
+<br />
+<br />
+</p>
+<div id="dichotomous-items" class="section level1">
+<h1>1. Dichotomous items</h1>
+<ul>
+<li><strong>Preparing data</strong></li>
+</ul>
+<p>The function <code>DataGeneration</code> can be used for the
+pre-analysis step. This function returns artificial data and some useful
+objects for analysis (i.e., <code>theta</code>, <code>data_D</code>,
+<code>item_D</code>, and <code>initialitem_d</code>).<br />
+<br />
+In the parameter estimation process, the <code>initialitem</code> can be
+used for an input of the function <code>IRTest_Dich</code> (i.e.,
+<code>initialitem = initialitem</code>). The <code>data</code> is an
+artificial item response data that could be unnecessary if user-imported
+item response data is used. The <code>theta</code> and <code>item</code>
+are not used for the estimation process. They can be considered as the
+true parameters only if the artificial data (<code>data</code>) is used
+for analysis.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>Alldata <span class="ot">&lt;-</span> <span class="fu">DataGeneration</span>(<span class="at">seed =</span> <span class="dv">123456789</span>,</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">model_D =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">each=</span><span class="dv">5</span>),</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">N=</span><span class="dv">1000</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_D =</span> <span class="dv">10</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_P =</span> <span class="dv">0</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d =</span> <span class="fl">1.664</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">sd_ratio =</span> <span class="dv">2</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">prob =</span> <span class="fl">0.3</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>data_D</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>item <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>item_D</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>initialitem <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>initialitem_D</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>theta</span></code></pre></div>
+<p>If the artificial data (<code>data</code>) is used, the true latent
+distribution looks like,</p>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Analysis</strong> (parameter estimation)</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">###### Empirical histogram method ######</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>Mod1 <span class="ot">&lt;-</span> <span class="fu">IRTest_Dich</span>(<span class="at">initialitem =</span> initialitem,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">model =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>, <span class="at">each=</span><span class="dv">5</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">latent_dist =</span> <span class="st">&quot;EHM&quot;</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">max_iter =</span> <span class="dv">200</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">threshold =</span> .<span class="dv">0001</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 1, Max-Change = 1.14005883919173 Method = EHM,</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 2, Max-Change = 0.217457817143965 Method = EHM, EM cycle = 3,</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.0955915489894688 Method = EHM, EM cycle = 4, Max-Change =</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0358405002790235 Method = EHM, EM cycle = 5, Max-Change = 0.0285635437289516</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 6, Max-Change = 0.0234969794594866 Method = EHM,</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 7, Max-Change = 0.0204662534522857 Method = EHM, EM cycle = 8,</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.0200949726775232 Method = EHM, EM cycle = 9, Max-Change =</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0187660519670731 Method = EHM, EM cycle = 10, Max-Change = 0.0171632047022134</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 11, Max-Change = 0.0155465421620229 Method =</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EHM, EM cycle = 12, Max-Change = 0.0140115656791813 Method = EHM, EM cycle</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 13, Max-Change = 0.0125917102791262 Method = EHM, EM cycle = 14, Max-</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.0112964979160926 Method = EHM, EM cycle = 15, Max-Change =</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0101252498562294 Method = EHM, EM cycle = 16, Max-Change = 0.00907383763163416</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 17, Max-Change = 0.00814805756028436 Method</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = EHM, EM cycle = 18, Max-Change = 0.00729173223939394 Method = EHM,</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 19, Max-Change = 0.00650537019558506 Method = EHM, EM cycle</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 20, Max-Change = 0.00582186456986333 Method = EHM, EM cycle = 21,</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.00520529798160485 Method = EHM, EM cycle = 22, Max-</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00465221827122653 Method = EHM, EM cycle = 23, Max-</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00428163649214941 Method = EHM, EM cycle = 24, Max-</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00396921083330071 Method = EHM, EM cycle = 25, Max-</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00369014609293039 Method = EHM, EM cycle = 26, Max-Change =</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.00343510750168363 Method = EHM, EM cycle = 27, Max-Change = 0.0031866758618202</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 28, Max-Change = 0.00294813635862035 Method = EHM,</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 29, Max-Change = 0.00272013468554411 Method = EHM, EM cycle = 30,</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.00250244068826966 Method = EHM, EM cycle = 31, Max-Change =</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0022952845795583 Method = EHM, EM cycle = 32, Max-Change = 0.00209918371445328</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 33, Max-Change = 0.00191438240497099 Method =</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EHM, EM cycle = 34, Max-Change = 0.00174117071445057 Method = EHM, EM cycle</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 35, Max-Change = 0.00157926600288905 Method = EHM, EM cycle = 36, Max-</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.0014286235027865 Method = EHM, EM cycle = 37, Max-Change =</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0012888670846416 Method = EHM, EM cycle = 38, Max-Change = 0.00115952149486986</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = EHM, EM cycle = 39, Max-Change = 0.00104004700004978 Method =</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EHM, EM cycle = 40, Max-Change = 0.000929864888749687 Method = EHM, EM</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; cycle = 41, Max-Change = 0.000828378250406381 Method = EHM, EM cycle</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 42, Max-Change = 0.0007349884811374 Method = EHM, EM cycle = 43,</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.000649107948626604 Method = EHM, EM cycle = 44, Max-</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000570169281675525 Method = EHM, EM cycle = 45, Max-</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000497631789268205 Method = EHM, EM cycle = 46, Max-</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000430985519817906 Method = EHM, EM cycle = 47, Max-</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000369753445251142 Method = EHM, EM cycle = 48, Max-</span></span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000313492208199317 Method = EHM, EM cycle = 49, Max-</span></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000261791809010425 Method = EHM, EM cycle = 50, Max-</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000214274546957327 Method = EHM, EM cycle = 51, Max-</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000170593467114788 Method = EHM, EM cycle = 52, Max-</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000174691136431537 Method = EHM, EM cycle = 53, Max-</span></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000195540665820726 Method = EHM, EM cycle = 54, Max-</span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000214685008886217 Method = EHM, EM cycle = 55, Max-</span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000232260043464994 Method = EHM, EM cycle = 56, Max-</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000248390954942224 Method = EHM, EM cycle = 57, Max-</span></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000263192783256816 Method = EHM, EM cycle = 58, Max-</span></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000276771094381623 Method = EHM, EM cycle = 59, Max-</span></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000289234013148842 Method = EHM, EM cycle = 60, Max-</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000300665601096206 Method = EHM, EM cycle = 61, Max-</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00031113960147966 Method = EHM, EM cycle = 62, Max-</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000320731480348169 Method = EHM, EM cycle = 63, Max-</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000329509983641785 Method = EHM, EM cycle = 64, Max-</span></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00033755713614525 Method = EHM, EM cycle = 65, Max-</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000344925271684282 Method = EHM, EM cycle = 66, Max-</span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000351679223568713 Method = EHM, EM cycle = 67, Max-</span></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000357862709691847 Method = EHM, EM cycle = 68, Max-</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000363509628073633 Method = EHM, EM cycle = 69, Max-</span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000368826395613198 Method = EHM, EM cycle = 70, Max-</span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000373873967621119 Method = EHM, EM cycle = 71, Max-</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000377410735556971 Method = EHM, EM cycle = 72, Max-</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000380102211888556 Method = EHM, EM cycle = 73, Max-</span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000382977035546794 Method = EHM, EM cycle = 74, Max-</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000386040236137752 Method = EHM, EM cycle = 75, Max-</span></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000389190657248406 Method = EHM, EM cycle = 76, Max-</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000392347010952143 Method = EHM, EM cycle = 77, Max-</span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000395362132769694 Method = EHM, EM cycle = 78, Max-</span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000398182278364079 Method = EHM, EM cycle = 79, Max-</span></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.0004007950322511 Method = EHM, EM cycle = 80, Max-</span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000403134745168288 Method = EHM, EM cycle = 81, Max-</span></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000405186573893879 Method = EHM, EM cycle = 82, Max-</span></span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000406949735376028 Method = EHM, EM cycle = 83, Max-</span></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000408430748954469 Method = EHM, EM cycle = 84, Max-</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000409640435402814 Method = EHM, EM cycle = 85, Max-</span></span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000410592025367418 Method = EHM, EM cycle = 86, Max-</span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000411299882153493 Method = EHM, EM cycle = 87, Max-</span></span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000411778638635507 Method = EHM, EM cycle = 88, Max-</span></span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000412042629044596 Method = EHM, EM cycle = 89, Max-</span></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000412105533141638 Method = EHM, EM cycle = 90, Max-</span></span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000411980171540982 Method = EHM, EM cycle = 91, Max-</span></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000411678407548077 Method = EHM, EM cycle = 92, Max-</span></span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000411211121027932 Method = EHM, EM cycle = 93, Max-</span></span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00041058822961304 Method = EHM, EM cycle = 94, Max-</span></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000409818738383638 Method = EHM, EM cycle = 95, Max-</span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000408910805933971 Method = EHM, EM cycle = 96, Max-</span></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000407871817664329 Method = EHM, EM cycle = 97, Max-</span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000406708459747662 Method = EHM, EM cycle = 98, Max-</span></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000405426791504127 Method = EHM, EM cycle = 99, Max-</span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000404032312362634 Method = EHM, EM cycle = 100, Max-</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000402530023868142 Method = EHM, EM cycle = 101, Max-</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000400924485530307 Method = EHM, EM cycle = 102, Max-</span></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000399219864630762 Method = EHM, EM cycle = 103, Max-</span></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000397419980819436 Method = EHM, EM cycle = 104, Max-</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000395528345563445 Method = EHM, EM cycle = 105, Max-</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000393548197154647 Method = EHM, EM cycle = 106, Max-</span></span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000391482531846954 Method = EHM, EM cycle = 107, Max-</span></span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000389334131664754 Method = EHM, EM cycle = 108, Max-</span></span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000387105588810943 Method = EHM, EM cycle = 109, Max-</span></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000384799328466467 Method = EHM, EM cycle = 110, Max-</span></span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000382417627995846 Method = EHM, EM cycle = 111, Max-</span></span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000379962635605136 Method = EHM, EM cycle = 112, Max-</span></span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000377436386110208 Method = EHM, EM cycle = 113, Max-</span></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00037484081609751 Method = EHM, EM cycle = 114, Max-</span></span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000372177776908789 Method = EHM, EM cycle = 115, Max-</span></span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00036944904722036 Method = EHM, EM cycle = 116, Max-</span></span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000366656343793181 Method = EHM, EM cycle = 117, Max-</span></span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000363801331611846 Method = EHM, EM cycle = 118, Max-</span></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000360885632970209 Method = EHM, EM cycle = 119, Max-</span></span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000357910835684816 Method = EHM, EM cycle = 120, Max-</span></span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000354878500550715 Method = EHM, EM cycle = 121, Max-</span></span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000351790167909982 Method = EHM, EM cycle = 122, Max-</span></span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000348647363706878 Method = EHM, EM cycle = 123, Max-</span></span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000345451604756963 Method = EHM, EM cycle = 124, Max-</span></span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000342204403414925 Method = EHM, EM cycle = 125, Max-</span></span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000338907271779654 Method = EHM, EM cycle = 126, Max-</span></span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000335561725173239 Method = EHM, EM cycle = 127, Max-</span></span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000332169285224282 Method = EHM, EM cycle = 128, Max-</span></span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000328731482641231 Method = EHM, EM cycle = 129, Max-</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000325249859197463 Method = EHM, EM cycle = 130, Max-</span></span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000321725969552933 Method = EHM, EM cycle = 131, Max-</span></span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000318161382750315 Method = EHM, EM cycle = 132, Max-</span></span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00031455768306321 Method = EHM, EM cycle = 133, Max-</span></span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000310916470889655 Method = EHM, EM cycle = 134, Max-</span></span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000307239363068756 Method = EHM, EM cycle = 135, Max-</span></span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000303527993006814 Method = EHM, EM cycle = 136, Max-</span></span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000299784010616033 Method = EHM, EM cycle = 137, Max-</span></span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000296009081856674 Method = EHM, EM cycle = 138, Max-</span></span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000292204888280967 Method = EHM, EM cycle = 139, Max-</span></span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000288373126149377 Method = EHM, EM cycle = 140, Max-</span></span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000284515505634353 Method = EHM, EM cycle = 141, Max-</span></span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000280633749488945 Method = EHM, EM cycle = 142, Max-</span></span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000276729592060043 Method = EHM, EM cycle = 143, Max-</span></span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000272804777722957 Method = EHM, EM cycle = 144, Max-</span></span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000268861059470993 Method = EHM, EM cycle = 145, Max-</span></span>
+<span id="cb3-148"><a href="#cb3-148" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000264900197351814 Method = EHM, EM cycle = 146, Max-</span></span>
+<span id="cb3-149"><a href="#cb3-149" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000260923956798109 Method = EHM, EM cycle = 147, Max-</span></span>
+<span id="cb3-150"><a href="#cb3-150" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000256934106765527 Method = EHM, EM cycle = 148, Max-</span></span>
+<span id="cb3-151"><a href="#cb3-151" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000252932418201901 Method = EHM, EM cycle = 149, Max-</span></span>
+<span id="cb3-152"><a href="#cb3-152" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00024892066196136 Method = EHM, EM cycle = 150, Max-</span></span>
+<span id="cb3-153"><a href="#cb3-153" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000244900607063947 Method = EHM, EM cycle = 151, Max-</span></span>
+<span id="cb3-154"><a href="#cb3-154" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000240874018829995 Method = EHM, EM cycle = 152, Max-</span></span>
+<span id="cb3-155"><a href="#cb3-155" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000236842656800018 Method = EHM, EM cycle = 153, Max-</span></span>
+<span id="cb3-156"><a href="#cb3-156" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000232808273065377 Method = EHM, EM cycle = 154, Max-</span></span>
+<span id="cb3-157"><a href="#cb3-157" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000228772610135763 Method = EHM, EM cycle = 155, Max-</span></span>
+<span id="cb3-158"><a href="#cb3-158" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000224737399294295 Method = EHM, EM cycle = 156, Max-</span></span>
+<span id="cb3-159"><a href="#cb3-159" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000220704358461443 Method = EHM, EM cycle = 157, Max-</span></span>
+<span id="cb3-160"><a href="#cb3-160" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000216675190546578 Method = EHM, EM cycle = 158, Max-</span></span>
+<span id="cb3-161"><a href="#cb3-161" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000212651581524614 Method = EHM, EM cycle = 159, Max-</span></span>
+<span id="cb3-162"><a href="#cb3-162" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000208635198786222 Method = EHM, EM cycle = 160, Max-</span></span>
+<span id="cb3-163"><a href="#cb3-163" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000204627689326387 Method = EHM, EM cycle = 161, Max-</span></span>
+<span id="cb3-164"><a href="#cb3-164" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000200630678143021 Method = EHM, EM cycle = 162, Max-</span></span>
+<span id="cb3-165"><a href="#cb3-165" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000196645766555648 Method = EHM, EM cycle = 163, Max-</span></span>
+<span id="cb3-166"><a href="#cb3-166" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000192674530758996 Method = EHM, EM cycle = 164, Max-</span></span>
+<span id="cb3-167"><a href="#cb3-167" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000188718520241604 Method = EHM, EM cycle = 165, Max-</span></span>
+<span id="cb3-168"><a href="#cb3-168" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000184779256453549 Method = EHM, EM cycle = 166, Max-</span></span>
+<span id="cb3-169"><a href="#cb3-169" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000180858231450198 Method = EHM, EM cycle = 167, Max-</span></span>
+<span id="cb3-170"><a href="#cb3-170" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000176956906632331 Method = EHM, EM cycle = 168, Max-</span></span>
+<span id="cb3-171"><a href="#cb3-171" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000173076711448505 Method = EHM, EM cycle = 169, Max-</span></span>
+<span id="cb3-172"><a href="#cb3-172" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000169219042536639 Method = EHM, EM cycle = 170, Max-</span></span>
+<span id="cb3-173"><a href="#cb3-173" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000165385262416162 Method = EHM, EM cycle = 171, Max-</span></span>
+<span id="cb3-174"><a href="#cb3-174" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000161576698749499 Method = EHM, EM cycle = 172, Max-</span></span>
+<span id="cb3-175"><a href="#cb3-175" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000157794643264708 Method = EHM, EM cycle = 173, Max-</span></span>
+<span id="cb3-176"><a href="#cb3-176" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000154040351332707 Method = EHM, EM cycle = 174, Max-</span></span>
+<span id="cb3-177"><a href="#cb3-177" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000150315040734483 Method = EHM, EM cycle = 175, Max-</span></span>
+<span id="cb3-178"><a href="#cb3-178" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000146619891554511 Method = EHM, EM cycle = 176, Max-</span></span>
+<span id="cb3-179"><a href="#cb3-179" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000142956045292575 Method = EHM, EM cycle = 177, Max-</span></span>
+<span id="cb3-180"><a href="#cb3-180" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00013932460458399 Method = EHM, EM cycle = 178, Max-</span></span>
+<span id="cb3-181"><a href="#cb3-181" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00013572663273953 Method = EHM, EM cycle = 179, Max-</span></span>
+<span id="cb3-182"><a href="#cb3-182" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000132163153495402 Method = EHM, EM cycle = 180, Max-</span></span>
+<span id="cb3-183"><a href="#cb3-183" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000128635150673517 Method = EHM, EM cycle = 181, Max-</span></span>
+<span id="cb3-184"><a href="#cb3-184" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000125143568109998 Method = EHM, EM cycle = 182, Max-</span></span>
+<span id="cb3-185"><a href="#cb3-185" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000121689309664053 Method = EHM, EM cycle = 183, Max-</span></span>
+<span id="cb3-186"><a href="#cb3-186" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000118273238993272 Method = EHM, EM cycle = 184, Max-</span></span>
+<span id="cb3-187"><a href="#cb3-187" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00011489617978766 Method = EHM, EM cycle = 185, Max-</span></span>
+<span id="cb3-188"><a href="#cb3-188" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000111558915793175 Method = EHM, EM cycle = 186, Max-</span></span>
+<span id="cb3-189"><a href="#cb3-189" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.0001082621910653 Method = EHM, EM cycle = 187, Max-</span></span>
+<span id="cb3-190"><a href="#cb3-190" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000105006710142685 Method = EHM, EM cycle = 188, Max-</span></span>
+<span id="cb3-191"><a href="#cb3-191" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.000101793138431727 Method = EHM, EM cycle = 189, Max-Change =</span></span>
+<span id="cb3-192"><a href="#cb3-192" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9.86221025724987e-05</span></span>
+<span id="cb3-193"><a href="#cb3-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-194"><a href="#cb3-194" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb3-195"><a href="#cb3-195" aria-hidden="true" tabindex="-1"></a><span class="do">###### Kernel density estimation method ######</span></span>
+<span id="cb3-196"><a href="#cb3-196" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb3-197"><a href="#cb3-197" aria-hidden="true" tabindex="-1"></a><span class="co"># Mod1 &lt;- IRTest_Dich(initialitem = initialitem,</span></span>
+<span id="cb3-198"><a href="#cb3-198" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data = data,</span></span>
+<span id="cb3-199"><a href="#cb3-199" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model = rep(1:2, each=5),</span></span>
+<span id="cb3-200"><a href="#cb3-200" aria-hidden="true" tabindex="-1"></a><span class="co">#                     latent_dist = &quot;KDE&quot;,</span></span>
+<span id="cb3-201"><a href="#cb3-201" aria-hidden="true" tabindex="-1"></a><span class="co">#                     bandwidth = &quot;SJ-ste&quot;,</span></span>
+<span id="cb3-202"><a href="#cb3-202" aria-hidden="true" tabindex="-1"></a><span class="co">#                     max_iter = 200,</span></span>
+<span id="cb3-203"><a href="#cb3-203" aria-hidden="true" tabindex="-1"></a><span class="co">#                     threshold = .001)</span></span>
+<span id="cb3-204"><a href="#cb3-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-205"><a href="#cb3-205" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb3-206"><a href="#cb3-206" aria-hidden="true" tabindex="-1"></a><span class="do">###### Normality assumption ######</span></span>
+<span id="cb3-207"><a href="#cb3-207" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb3-208"><a href="#cb3-208" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Dich(initialitem = initialitem,</span></span>
+<span id="cb3-209"><a href="#cb3-209" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb3-210"><a href="#cb3-210" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = rep(1:2, each=5),</span></span>
+<span id="cb3-211"><a href="#cb3-211" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;Normal&quot;,</span></span>
+<span id="cb3-212"><a href="#cb3-212" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb3-213"><a href="#cb3-213" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .0001)</span></span>
+<span id="cb3-214"><a href="#cb3-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-215"><a href="#cb3-215" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb3-216"><a href="#cb3-216" aria-hidden="true" tabindex="-1"></a><span class="do">###### Two-component Gaussian mixture distribution ######</span></span>
+<span id="cb3-217"><a href="#cb3-217" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb3-218"><a href="#cb3-218" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Dich(initialitem = initialitem,</span></span>
+<span id="cb3-219"><a href="#cb3-219" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb3-220"><a href="#cb3-220" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = rep(1:2, each=5),</span></span>
+<span id="cb3-221"><a href="#cb3-221" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;Mixture&quot;,</span></span>
+<span id="cb3-222"><a href="#cb3-222" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb3-223"><a href="#cb3-223" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .0001)</span></span>
+<span id="cb3-224"><a href="#cb3-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-225"><a href="#cb3-225" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                       ######</span></span>
+<span id="cb3-226"><a href="#cb3-226" aria-hidden="true" tabindex="-1"></a><span class="do">###### Davidian curve (for an arbitrarily chosen case of h=4)######</span></span>
+<span id="cb3-227"><a href="#cb3-227" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                       ######</span></span>
+<span id="cb3-228"><a href="#cb3-228" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Dich(initialitem = initialitem,</span></span>
+<span id="cb3-229"><a href="#cb3-229" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb3-230"><a href="#cb3-230" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = rep(1:2, each=5),</span></span>
+<span id="cb3-231"><a href="#cb3-231" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;DC&quot;,</span></span>
+<span id="cb3-232"><a href="#cb3-232" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb3-233"><a href="#cb3-233" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .0001,</span></span>
+<span id="cb3-234"><a href="#cb3-234" aria-hidden="true" tabindex="-1"></a><span class="co">#                      h=4)</span></span></code></pre></div>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Results</strong></li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated item parameters</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>par_est</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              a           b c</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,] 1.000000 -0.81791378 0</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,] 1.000000  0.93346265 0</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,] 1.000000  0.45638984 0</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,] 1.000000 -0.06571304 0</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,] 1.000000 -0.85014932 0</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,] 1.214051 -0.37829522 0</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] 2.201096 -1.10134627 0</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,] 2.343780 -0.44424687 0</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] 2.095085 -0.21417143 0</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,] 1.071522  0.08171582 0</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="do">### The asymptotic standard errors of item parameters</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>se</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                a          b  c</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,]         NA 0.07316482 NA</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,]         NA 0.07437462 NA</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,]         NA 0.07091295 NA</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,]         NA 0.06991033 NA</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,]         NA 0.07343322 NA</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,] 0.08725007 0.06247266 NA</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] 0.15999786 0.04858514 NA</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,] 0.13483504 0.04037375 NA</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] 0.12184146 0.04188987 NA</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,] 0.08285023 0.06617414 NA</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated ability parameters</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(Mod1<span class="sc">$</span>theta)</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] -0.7537932 -0.5428673 -1.2226573 -1.0056440 -1.1277099 -1.3182821</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated latent distribution</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_LD</span>(Mod1, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">6</span>,<span class="dv">6</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+</p>
+<hr />
+</div>
+<div id="polytomous-items" class="section level1">
+<h1>2. Polytomous items</h1>
+<ul>
+<li><strong>Preparing data</strong></li>
+</ul>
+<p>As in the case of dichotomous items, the function
+<code>DataGeneration</code> can be used for the pre-analysis step. This
+function returns artificial data and some useful objects for analysis
+(i.e., <code>theta</code>, <code>data_P</code>, <code>item_P</code>, and
+<code>initialitem_P</code>).<br />
+<br />
+In the parameter estimation process, the <code>initialitem</code> can be
+used for an input of the function <code>IRTest_Poly</code> (i.e.,
+<code>initialitem = initialitem</code>). The <code>data</code> is an
+artificial item response data that could be unnecessary if user-imported
+item response data is used. The <code>theta</code> and <code>item</code>
+are not used for the estimation process. They can be considered as the
+true parameters only if the artificial data (<code>data</code>) is used
+for analysis.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Alldata <span class="ot">&lt;-</span> <span class="fu">DataGeneration</span>(<span class="at">seed =</span> <span class="dv">123456789</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">model_P =</span> <span class="st">&quot;GPCM&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">categ =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">7</span>), <span class="at">each =</span> <span class="dv">5</span>),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">N=</span><span class="dv">1000</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_D =</span> <span class="dv">0</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_P =</span> <span class="dv">10</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d =</span> <span class="fl">1.414</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">sd_ratio =</span> <span class="dv">2</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">prob =</span> <span class="fl">0.5</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>data_P</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>item <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>item_P</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>initialitem <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>initialitem_P</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>theta</span></code></pre></div>
+<p>If the artificial data (<code>data</code>) is used, the true latent
+distribution looks like,</p>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Analysis</strong> (parameter estimation)</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="do">###### Kernel density estimation method ######</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>Mod1 <span class="ot">&lt;-</span> <span class="fu">IRTest_Poly</span>(<span class="at">initialitem =</span> initialitem,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> data,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">model =</span> <span class="st">&quot;GPCM&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">latent_dist =</span> <span class="st">&quot;KDE&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">bandwidth =</span> <span class="st">&quot;SJ-ste&quot;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">max_iter =</span> <span class="dv">200</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">threshold =</span> .<span class="dv">001</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 1, Max-Change = 1.06861179488865 Method = KDE, EM</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; cycle = 2, Max-Change = 0.572576285885708 Method = KDE, EM cycle = 3, Max-Change</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 1.1956289848566 Method = KDE, EM cycle = 4, Max-Change = 1.33304744136422</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 5, Max-Change = 0.652894453937292 Method = KDE,</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 6, Max-Change = 0.399749918296198 Method = KDE, EM cycle = 7,</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.226152345091642 Method = KDE, EM cycle = 8, Max-Change =</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.120544125380424 Method = KDE, EM cycle = 9, Max-Change = 0.0607672232908261</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 10, Max-Change = 0.0260925050459035 Method = KDE,</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 11, Max-Change = 0.0198914998910418 Method = KDE, EM cycle = 12,</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.0158930673063724 Method = KDE, EM cycle = 13, Max-Change =</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0130926924936661 Method = KDE, EM cycle = 14, Max-Change = 0.0108270260815266</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 15, Max-Change = 0.00963938334502812 Method =</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; KDE, EM cycle = 16, Max-Change = 0.00931969037839542 Method = KDE, EM cycle</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 17, Max-Change = 0.00954657222262956 Method = KDE, EM cycle = 18, Max-</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00977403467488447 Method = KDE, EM cycle = 19, Max-Change =</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0092152434487085 Method = KDE, EM cycle = 20, Max-Change = 0.00846831844475071</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 21, Max-Change = 0.00715153573911209 Method</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = KDE, EM cycle = 22, Max-Change = 0.00631484417174333 Method = KDE,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 23, Max-Change = 0.00548551243527617 Method = KDE, EM cycle</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 24, Max-Change = 0.00483454547226048 Method = KDE, EM cycle = 25,</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.00416850067370778 Method = KDE, EM cycle = 26, Max-</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00356760538470802 Method = KDE, EM cycle = 27, Max-</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00303001332387343 Method = KDE, EM cycle = 28, Max-</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00255758952716789 Method = KDE, EM cycle = 29, Max-</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00214994775526112 Method = KDE, EM cycle = 30, Max-</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00180343918837256 Method = KDE, EM cycle = 31, Max-</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00143548204651678 Method = KDE, EM cycle = 32, Max-</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00129110152521683 Method = KDE, EM cycle = 33, Max-</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00235994271063023 Method = KDE, EM cycle = 34, Max-</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00223687640370152 Method = KDE, EM cycle = 35, Max-</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00150460130580399 Method = KDE, EM cycle = 36, Max-</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00145400439244447 Method = KDE, EM cycle = 37, Max-</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00128605458284081 Method = KDE, EM cycle = 38, Max-</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00110342365498983 Method = KDE, EM cycle = 39, Max-Change =</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.000936361577671185</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a><span class="do">###### Normality assumption ######</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Poly(initialitem = initialitem,</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = &quot;GPCM&quot;,</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;Normal&quot;,</span></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .001)</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="do">###### Empirical histogram method ######</span></span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Poly(initialitem = initialitem,</span></span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = &quot;GPCM&quot;,</span></span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;EHM&quot;,</span></span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .001)</span></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="do">###### Two-component Gaussian mixture distribution ######</span></span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Poly(initialitem = initialitem,</span></span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = &quot;GPCM&quot;,</span></span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;Mixture&quot;,</span></span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .001)</span></span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                        ######</span></span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a><span class="do">###### Davidian curve (for an arbitrarily chosen case of h=4) ######</span></span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                        ######</span></span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Poly(initialitem = initialitem,</span></span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a><span class="co">#                      data = data,</span></span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a><span class="co">#                      model = &quot;GPCM&quot;,</span></span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a><span class="co">#                      latent_dist = &quot;DC&quot;,</span></span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a><span class="co">#                      max_iter = 200,</span></span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a><span class="co">#                      threshold = .001,</span></span>
+<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a><span class="co">#                      h=4)</span></span></code></pre></div>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Results</strong></li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated item parameters</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>par_est</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;               a          b_1         b_2        b_3         b_4        b_5</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,] 1.9320419  0.396698909  0.46603651         NA          NA         NA</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,] 1.6880632 -0.303763927  0.05188864         NA          NA         NA</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,] 2.0504530 -0.376056390 -0.24941074         NA          NA         NA</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,] 1.0605873 -0.159282350  0.16815184         NA          NA         NA</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,] 0.7835049  0.003729855  0.22658723         NA          NA         NA</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,] 1.8907281  0.253908544  0.29706486  0.5563451  0.56108999  0.7435219</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] 1.5439636 -1.603051232 -1.12357477 -1.0013097 -1.06426560 -0.7066684</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,] 0.9479375 -0.332417438 -0.17196848  0.3086190  0.06595696 -0.2510836</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] 1.4230350 -0.784687384 -0.69487372 -0.6851528 -0.46813907 -0.5758896</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,] 2.5827215  0.546921194  0.94939512  0.7099745  1.04467562  1.0309654</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              b_6</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,]         NA</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,]         NA</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,]         NA</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,]         NA</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,]         NA</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,]  0.8505778</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] -0.6593098</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,]  0.1465100</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] -0.4351178</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,]  1.2435975</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="do">### The asymptotic standard errors of item parameters</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>se</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                a        b_1        b_2       b_3        b_4        b_5</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,] 0.11560425 0.06407208 0.06475432        NA         NA         NA</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,] 0.09873818 0.05692682 0.05873271        NA         NA         NA</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,] 0.12254146 0.05222493 0.05290338        NA         NA         NA</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,] 0.06700339 0.08275252 0.08438107        NA         NA         NA</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,] 0.05524448 0.10839246 0.10990234        NA         NA         NA</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,] 0.11338544 0.06983861 0.08428678 0.1076463 0.11530990 0.10459915</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] 0.09071435 0.14185389 0.12458750 0.1208955 0.10620807 0.08435877</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,] 0.05380619 0.11427616 0.13330931 0.1692535 0.18844552 0.17129060</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] 0.08124190 0.10135122 0.11385157 0.1183858 0.11737822 0.10510023</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,] 0.16806178 0.05840518 0.08680555 0.1003863 0.09807777 0.09198491</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;              b_6</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [1,]         NA</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [2,]         NA</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [3,]         NA</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [4,]         NA</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [5,]         NA</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [6,] 0.08789139</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [7,] 0.07567987</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [8,] 0.13258224</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;  [9,] 0.08666445</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [10,] 0.07509506</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated ability parameters</span></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(Mod1<span class="sc">$</span>theta)</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] -0.5375323 -0.5787214 -0.2605974 -1.0428218 -0.9306040 -1.2750381</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated latent distribution</span></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_LD</span>(Mod1, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">6</span>,<span class="dv">6</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+</p>
+<hr />
+</div>
+<div id="mixed-format-test" class="section level1">
+<h1>3. Mixed-format test</h1>
+<ul>
+<li><strong>Preparing data</strong></li>
+</ul>
+<p>As in the case of dichotomous and polytomous items, the function
+<code>DataGeneration</code> can be used for the pre-analysis step. This
+function returns artificial data and some useful objects for analysis
+(i.e., <code>theta</code>, <code>data_D</code>, <code>item_D</code>,
+<code>initialitem_D</code>, <code>data_P</code>, <code>item_P</code>,
+and <code>initialitem_P</code>).<br />
+<br />
+In the parameter estimation process, the <code>initialitem</code> can be
+used for an input of the function <code>IRTest_Mix</code> (i.e.,
+<code>initialitem = initialitem</code>). The <code>data</code> is an
+artificial item response data that could be unnecessary if user-imported
+item response data is used. The <code>theta</code> and <code>item</code>
+are not used for the estimation process. They can be considered as the
+true parameters only if the artificial data (<code>data</code>) is used
+for analysis.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>Alldata <span class="ot">&lt;-</span> <span class="fu">DataGeneration</span>(<span class="at">seed =</span> <span class="dv">123456789</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>                          <span class="at">model_D =</span> <span class="fu">rep</span>(<span class="dv">2</span>,<span class="dv">5</span>),</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">model_P =</span> <span class="st">&quot;GPCM&quot;</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">categ =</span> <span class="fu">rep</span>(<span class="dv">3</span>,<span class="dv">5</span>),</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">N=</span><span class="dv">1000</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_D =</span> <span class="dv">5</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                          <span class="at">nitem_P =</span> <span class="dv">5</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                          <span class="at">d =</span> <span class="fl">1.664</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                          <span class="at">sd_ratio =</span> <span class="dv">1</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                          <span class="at">prob =</span> <span class="fl">0.5</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>DataD <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>data_D</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>DataP <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>data_P</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>itemD <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>item_D</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>itemP <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>item_P</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>initialitemD <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>initialitem_D</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>initialitemP <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>initialitem_P</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>theta <span class="ot">&lt;-</span> Alldata<span class="sc">$</span>theta</span></code></pre></div>
+<p>If the artificial data (<code>data</code>) is used, the true latent
+distribution looks like,</p>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Analysis</strong> (parameter estimation)</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">###### Kernel density estimation method ######</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="do">######                                  ######</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>Mod1 <span class="ot">&lt;-</span> <span class="fu">IRTest_Mix</span>(<span class="at">initialitem_D =</span> initialitemD,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>                   <span class="at">initialitem_P =</span> initialitemP,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data_D =</span> DataD,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data_P =</span> DataP,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                   <span class="at">model_D =</span> <span class="fu">rep</span>(<span class="dv">2</span>,<span class="dv">5</span>),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">model_P =</span> <span class="st">&quot;GPCM&quot;</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">latent_dist =</span> <span class="st">&quot;KDE&quot;</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">bandwidth =</span> <span class="st">&quot;SJ-ste&quot;</span>,</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">max_iter =</span> <span class="dv">200</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">threshold =</span> .<span class="dv">001</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 1, Max-Change = 1.27664510969542 Method = KDE,</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 2, Max-Change = 0.283162925229327 Method = KDE, EM cycle = 3,</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.11468686740523 Method = KDE, EM cycle = 4, Max-Change =</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0428847062639028 Method = KDE, EM cycle = 5, Max-Change = 0.0202299168294221</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 6, Max-Change = 0.0158767224469275 Method = KDE,</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 7, Max-Change = 0.0134661933298211 Method = KDE, EM cycle = 8,</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.0121555027373784 Method = KDE, EM cycle = 9, Max-Change =</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.0106195686463368 Method = KDE, EM cycle = 10, Max-Change = 0.00898701305472549</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Method = KDE, EM cycle = 11, Max-Change = 0.00788076379489278 Method</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = KDE, EM cycle = 12, Max-Change = 0.00711577652295109 Method = KDE,</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; EM cycle = 13, Max-Change = 0.00565935518666261 Method = KDE, EM cycle</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; = 14, Max-Change = 0.00525599397267795 Method = KDE, EM cycle = 15,</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Max-Change = 0.00477736944784368 Method = KDE, EM cycle = 16, Max-</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00561566260576329 Method = KDE, EM cycle = 17, Max-</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00453338476661269 Method = KDE, EM cycle = 18, Max-</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00365807940276097 Method = KDE, EM cycle = 19, Max-</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00537557750561257 Method = KDE, EM cycle = 20, Max-</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00274684001503989 Method = KDE, EM cycle = 21, Max-</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00178229497981702 Method = KDE, EM cycle = 22, Max-</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00149983028944267 Method = KDE, EM cycle = 23, Max-</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00128409555727266 Method = KDE, EM cycle = 24, Max-</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00110103212071344 Method = KDE, EM cycle = 25, Max-</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00102975032884611 Method = KDE, EM cycle = 26, Max-</span></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00106703937639074 Method = KDE, EM cycle = 27, Max-</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00129952864838123 Method = KDE, EM cycle = 28, Max-</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00144199601112338 Method = KDE, EM cycle = 29, Max-</span></span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00358150758132147 Method = KDE, EM cycle = 30, Max-</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; Change = 0.00181468350188441 Method = KDE, EM cycle = 31, Max-Change =</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0.000826399164590264</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="do">###### Normality assumption ######</span></span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a><span class="do">######                      ######</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Mix(initialitem_D = initialitemD,</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="co">#                     initialitem_P = initialitemP,</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_D = DataD,</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_P = DataP,</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_D = rep(2,5),</span></span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_P = &quot;GPCM&quot;,</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a><span class="co">#                     latent_dist = &quot;Normal&quot;,</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a><span class="co">#                     max_iter = 200,</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="co">#                     threshold = .001)</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="do">###### Empirical histogram method ######</span></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="do">######                            ######</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Mix(initialitem_D = initialitemD,</span></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a><span class="co">#                     initialitem_P = initialitemP,</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_D = DataD,</span></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_P = DataP,</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_D = rep(2,5),</span></span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_P = &quot;GPCM&quot;,</span></span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a><span class="co">#                     latent_dist = &quot;EHM&quot;,</span></span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a><span class="co">#                     max_iter = 200,</span></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a><span class="co">#                     threshold = .001)</span></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a><span class="do">###### Two-component Gaussian mixture distribution ######</span></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a><span class="do">######                                             ######</span></span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Mix(initialitem_D = initialitemD,</span></span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a><span class="co">#                     initialitem_P = initialitemP,</span></span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_D = DataD,</span></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_P = DataP,</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_D = rep(2,5),</span></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_P = &quot;GPCM&quot;,</span></span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a><span class="co">#                     latent_dist = &quot;Mixture&quot;,</span></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="co">#                     max_iter = 200,</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a><span class="co">#                     threshold = .001)</span></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                        ######</span></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="do">###### Davidian curve (for an arbitrarily chosen case of h=4) ######</span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="do">######                                                        ######</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a><span class="co">#  Mod1 &lt;- IRTest_Mix(initialitem_D = initialitemD,</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="co">#                     initialitem_P = initialitemP,</span></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_D = DataD,</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a><span class="co">#                     data_P = DataP,</span></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_D = rep(2,5),</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a><span class="co">#                     model_P = &quot;GPCM&quot;,</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a><span class="co">#                     latent_dist = &quot;DC&quot;,</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a><span class="co">#                     max_iter = 200,</span></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a><span class="co">#                     threshold = .001,</span></span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a><span class="co">#                     h = 4)</span></span></code></pre></div>
+<p><br />
+<br />
+<br />
+</p>
+<ul>
+<li><strong>Results</strong></li>
+</ul>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated item parameters</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>par_est</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Dichotomous</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;             a          b c</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] 2.200954  0.9115074 0</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] 1.984903 -1.0332999 0</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] 1.110728  0.4980855 0</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] 1.258792  0.5392781 0</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] 2.287480  1.4436252 0</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Polytomous</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;             a        b_1         b_2 b_3 b_4 b_5 b_6</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] 1.966701  0.3937469  0.42467910  NA  NA  NA  NA</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] 2.007852 -0.3261131  0.06844343  NA  NA  NA  NA</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] 2.056885 -0.3897486 -0.22236003  NA  NA  NA  NA</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] 1.030497 -0.1731280  0.19751324  NA  NA  NA  NA</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] 0.785141  0.2433940  0.08376259  NA  NA  NA  NA</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="do">### The asymptotic standard errors of item parameters</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>Mod1<span class="sc">$</span>se</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Dichotomous</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;               a          b  c</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] 0.15475720 0.04668629 NA</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] 0.14171212 0.05355501 NA</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] 0.08520384 0.06947386 NA</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] 0.09141200 0.06332382 NA</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] 0.19665345 0.06471224 NA</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; $Polytomous</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;               a        b_1        b_2 b_3 b_4 b_5 b_6</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1,] 0.11688799 0.05981212 0.05958615  NA  NA  NA  NA</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [2,] 0.11456065 0.05304505 0.05249768  NA  NA  NA  NA</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [3,] 0.11996224 0.05626596 0.05611498  NA  NA  NA  NA</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [4,] 0.06432937 0.08543217 0.08539457  NA  NA  NA  NA</span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [5,] 0.05401889 0.11481480 0.11424988  NA  NA  NA  NA</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated ability parameters</span></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(Mod1<span class="sc">$</span>theta)</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] -0.5775496 -0.7558405  0.6185433 -0.8691925 -1.3624809 -1.5623822</span></span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a><span class="do">### The estimated latent distribution</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_LD</span>(Mod1, <span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">6</span>,<span class="dv">6</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" style="display: block; margin: auto;" /></p>
+<p><br />
+<br />
+—-</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
