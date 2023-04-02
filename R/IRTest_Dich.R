@@ -18,6 +18,9 @@
 #' Insert \code{1}, \code{"1PL"}, \code{"Rasch"}, or \code{"RASCH"} for one-parameter logistic model,
 #' \code{2}, \code{"2PL"} for two-parameter logistic model,
 #' and \code{3}, \code{"3PL"} for three-parameter logistic model.
+#' @param ability_method The ability parameter estimation method.
+#' The available options are Expected \emph{a posteriori} (\code{EAP}) and Maximum Likelihood Estimates (\code{MLE}).
+#' The default is \code{EAP}.
 #' @param latent_dist A character string that determines latent distribution estimation method.
 #' Insert \code{"Normal"}, \code{"normal"}, or \code{"N"} to assume normal distribution on the latent distribution,
 #' \code{"EHM"} for empirical histogram method (Mislevy, 1984; Mislevy & Bock, 1985),
@@ -80,7 +83,7 @@
 #'
 #' @return This function returns a \code{list} which contains several objects:
 #' \item{par_est}{The item parameter estimates.}
-#' \item{se}{The standard errors for item parameter estimates.}
+#' \item{se}{The asymptotic standard errors for item parameter estimates.}
 #' \item{fk}{The estimated frequencies of examinees at each quadrature points.}
 #' \item{iter}{The number of EM-MML iterations required for the convergence.}
 #' \item{prob}{The estimated \eqn{\pi = \frac{n_1}{N}} parameter of two-component Gaussian mixture distribution, where \eqn{n_1} is the estimated number of examinees who belong to the first Gaussian component and \eqn{N} is the total number of examinees (Li, 2021).}
@@ -95,8 +98,9 @@
 #' \item{Ak}{The estimated discrete latent distribution.
 #' It is discrete (i.e., probability mass function) since quadrature scheme of EM-MML is used.}
 #' \item{Pk}{The posterior probabilities for each examinees at each quadrature points.}
-#' \item{theta}{The estimated ability parameter values.
-#' Expected \emph{a posteriori} (EAP) is used for ability parameter estimation.}
+#' \item{theta}{The estimated ability parameter values. If \code{ability_method = "MLE"}, and if an examinee answers all or none of the items correctly, the function returns \eqn{\pm}\code{Inf}.}
+#' \item{theta_se}{The asymptotic standard errors of ability parameter estimates. Available only when \code{ability_method = "MLE"}.
+#' If an examinee answers all or none of the items correctly, the function returns \code{NA}.}
 #' \item{logL}{The deviance (i.e., -2\emph{log}L).}
 #' \item{bw}{The bandwidth used.}
 #' \item{Options}{A replication of input arguments.}
@@ -151,8 +155,8 @@
 #'                   )
 #'
 IRTest_Dich <- function(initialitem, data, range = c(-6,6), q = 121, model,
-                        latent_dist="Normal", max_iter=200, threshold=0.0001,
-                        bandwidth="SJ-ste", h=NULL){
+                        ability_method = 'EAP', latent_dist="Normal", max_iter=200,
+                        threshold=0.0001, bandwidth="SJ-ste", h=NULL){
   Options = list(initialitem=initialitem, data=data, range=range, q=q, model=model,
                  latent_dist=latent_dist, max_iter=max_iter, threshold=threshold)
   I <- initialitem
@@ -285,11 +289,21 @@ IRTest_Dich <- function(initialitem, data, range = c(-6,6), q = 121, model,
       flush.console()
     }
   }
+  # ability parameter estimation
+  if(ability_method == 'EAP'){
+    theta <- as.numeric(E$Pk%*%E$Xk)
+    theta_se <- NULL
+  } else if(ability_method == 'MLE'){
+    mle_result <- MLE_theta(item = initialitem, data = data)
+    theta <- mle_result[[1]]
+    theta_se <- mle_result[[2]]
+  }
+
   colnames(initialitem) <- c("a", "b", "c")
   colnames(M1[[2]]) <- c("a", "b", "c")
 
   # preparation for outputs
-  EAP <- as.numeric(E$Pk%*%E$Xk)
+
   logL <- 0
   for(i in 1:q){
     logL <- logL+sum(logLikeli(initialitem, data, theta = Xk[i])*E$Pk[,i])
@@ -308,7 +322,8 @@ IRTest_Dich <- function(initialitem, data, range = c(-6,6), q = 121, model,
               diff=diff,
               Ak=Ak,
               Pk=E$Pk,
-              theta = EAP,
+              theta = theta,
+              theta_se = theta_se,
               logL=-2*logL, # deviance
               bw=bw,
               Options = Options # specified argument values

@@ -11,7 +11,7 @@ library(ggplot2)
 ## -----------------------------------------------------------------------------
 Alldata <- DataGeneration(seed = 123456789,
                           model_D = rep(1:2, each=5),
-                          N=1000,
+                          N=500,
                           nitem_D = 10,
                           nitem_P = 0,
                           d = 1.664,
@@ -30,7 +30,7 @@ ggplot(data = data.frame(x = c(-6,6)), aes(x)) +
   xlab(expression(theta)) +
   scale_y_continuous(breaks = NULL)
 
-## ---- results='hide'----------------------------------------------------------
+## ---- results='hide', message=FALSE-------------------------------------------
 ######                            ######
 ###### Empirical histogram method ######
 ######                            ######
@@ -119,7 +119,7 @@ ggplot(data = data.frame(x = c(-6,6)), aes(x)) +
   xlab(expression(theta)) +
   scale_y_continuous(breaks = NULL)
 
-## ---- results='hide'----------------------------------------------------------
+## ---- results='hide', message=FALSE-------------------------------------------
 ######                                  ######
 ###### Kernel density estimation method ######
 ######                                  ######
@@ -212,7 +212,7 @@ ggplot(data = data.frame(x = c(-6,6)), aes(x)) +
   xlab(expression(theta)) +
   scale_y_continuous(breaks = NULL)
 
-## ---- results='hide'----------------------------------------------------------
+## ---- results='hide', message=FALSE-------------------------------------------
 ######                                  ######
 ###### Kernel density estimation method ######
 ######                                  ######

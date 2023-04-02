@@ -34,28 +34,27 @@ install.packages("IRTest")
 
 Followings are functions of **IRTest** available for users.
 
--   `IRTest_Dich` is the estimation function when all items are
-    dichotomously scored.
+- `IRTest_Dich` is the estimation function when all items are
+  dichotomously scored.
 
--   `IRTest_Poly` is the estimation function when all items are
-    polytomously scored.
+- `IRTest_Poly` is the estimation function when all items are
+  polytomously scored.
 
--   `IRTest_Mix` is the estimation function for a mixed-format test, a
-    combination of dichotomous item(s) and polytomous item(s).
+- `IRTest_Mix` is the estimation function for a mixed-format test, a
+  combination of dichotomous item(s) and polytomous item(s).
 
--   `DataGeneration` generates several objects that are useful for
-    computer simulation studies. Among these are starting values for an
-    algorithm and artificial item-response data that can be passed to
-    `IRTest_Dich`, `IRTest_Poly`, or `IRTest_Mix`
+- `DataGeneration` generates several objects that are useful for
+  computer simulation studies. Among these are starting values for an
+  algorithm and artificial item-response data that can be passed to
+  `IRTest_Dich`, `IRTest_Poly`, or `IRTest_Mix`
 
--   `plot_LD` draws a plot of the estimated latent distribution.
+- `plot_LD` draws a plot of the estimated latent distribution.
 
--   `dist2` is a probability density function of two-component Gaussian
-    mixture distribution.
+- `dist2` is a probability density function of two-component Gaussian
+  mixture distribution.
 
--   `original_par_2GM` converts re-parameterized parameters of
-    two-component Gaussian mixture distribution into original
-    parameters.
+- `original_par_2GM` converts re-parameterized parameters of
+  two-component Gaussian mixture distribution into original parameters.
 
 ## Example
 
@@ -65,13 +64,13 @@ A simulation study for a Rasch model can be done in following manners:
 library(IRTest)
 ```
 
--   An artificial data of 500 examinees and 10 items.
+- An artificial data of 1000 examinees and 20 items.
 
 ``` r
 Alldata <- DataGeneration(seed = 123456789,
-                          model_D = rep(1, 10),
-                          N=500,
-                          nitem_D = 10,
+                          model_D = rep(1, 20),
+                          N=1000,
+                          nitem_D = 20,
                           nitem_P = 0,
                           d = 1.664,
                           sd_ratio = 2,
@@ -83,50 +82,86 @@ initialitem <- Alldata$initialitem_D
 theta <- Alldata$theta
 ```
 
--   Analysis
+- Analysis
 
-For an illustrative purpose, empirical histogram method is used for
+For an illustrative purpose, empirical histogram method is used for the
 estimation of latent distribution.
 
 ``` r
 Mod1 <- IRTest_Dich(initialitem = initialitem,
                     data = data,
-                    model = rep(1, 10),
+                    model = rep("1PL", 20),
                     latent_dist = "EHM",
-                    max_iter = 200,
-                    threshold = .001)
+                    threshold = .001
+                    )
 ```
 
--   Parameter estimation results
+- Parameter estimation results
 
 ``` r
 ### True item parameters 
-item
-#>       [,1]  [,2] [,3]
-#>  [1,]    1 -0.96    0
-#>  [2,]    1  0.67    0
-#>  [3,]    1  0.88    0
-#>  [4,]    1  0.55    0
-#>  [5,]    1 -0.20    0
-#>  [6,]    1  0.99    0
-#>  [7,]    1  0.38    0
-#>  [8,]    1  0.30    0
-#>  [9,]    1  1.93    0
-#> [10,]    1  0.53    0
+colnames(item) <- c("a", "b", "c")
+knitr::kable(item, format='simple', caption = "True item parameters")
+```
+
+|   a |     b |   c |
+|----:|------:|----:|
+|   1 | -0.96 |   0 |
+|   1 |  1.04 |   0 |
+|   1 |  0.47 |   0 |
+|   1 | -0.16 |   0 |
+|   1 | -0.81 |   0 |
+|   1 | -0.40 |   0 |
+|   1 |  0.82 |   0 |
+|   1 | -0.37 |   0 |
+|   1 | -1.11 |   0 |
+|   1 |  0.50 |   0 |
+|   1 | -0.97 |   0 |
+|   1 | -1.05 |   0 |
+|   1 |  0.02 |   0 |
+|   1 |  1.32 |   0 |
+|   1 | -0.50 |   0 |
+|   1 |  0.18 |   0 |
+|   1 | -1.39 |   0 |
+|   1 |  0.59 |   0 |
+|   1 | -0.58 |   0 |
+|   1 | -1.59 |   0 |
+
+True item parameters
+
+``` r
 
 ### Estimated item parameters
-Mod1$par_est
-#>       a          b c
-#>  [1,] 1 -0.7383615 0
-#>  [2,] 1  0.5071181 0
-#>  [3,] 1  0.7980726 0
-#>  [4,] 1  0.5274258 0
-#>  [5,] 1 -0.3909154 0
-#>  [6,] 1  0.8954094 0
-#>  [7,] 1  0.4264496 0
-#>  [8,] 1  0.3068586 0
-#>  [9,] 1  1.9525167 0
-#> [10,] 1  0.4465375 0
+knitr::kable(Mod1$par_est, format='simple', caption = "Estimated item parameters")
+```
+
+|   a |          b |   c |
+|----:|-----------:|----:|
+|   1 | -0.8177894 |   0 |
+|   1 |  0.9514716 |   0 |
+|   1 |  0.4703169 |   0 |
+|   1 | -0.0574434 |   0 |
+|   1 | -0.8503595 |   0 |
+|   1 | -0.4316589 |   0 |
+|   1 |  0.8852200 |   0 |
+|   1 | -0.3157931 |   0 |
+|   1 | -1.1680628 |   0 |
+|   1 |  0.5366363 |   0 |
+|   1 | -1.0744048 |   0 |
+|   1 | -1.1621301 |   0 |
+|   1 |  0.0709861 |   0 |
+|   1 |  1.2536640 |   0 |
+|   1 | -0.4265914 |   0 |
+|   1 |  0.2046360 |   0 |
+|   1 | -1.3770776 |   0 |
+|   1 |  0.5984116 |   0 |
+|   1 | -0.7533302 |   0 |
+|   1 | -1.6965297 |   0 |
+
+Estimated item parameters
+
+``` r
+
 
 ### Plotting
 par(mfrow=c(1,2))
@@ -138,10 +173,39 @@ abline(a=0,b=1)
 
 <img src="man/figures/README-results-1.png" width="100%" style="display: block; margin: auto;" />
 
--   Result of latent distribution estimation
+- Result of latent distribution estimation
 
 ``` r
-plot_LD(Mod1)
+plot_LD(Mod1)+
+  geom_line(mapping = aes(colour="Estimated"))+
+  geom_line(mapping=aes(x=seq(-6,6,length=121), 
+                        y=dist2(seq(-6,6,length=121),prob = .3, d=1.664, sd_ratio = 2), 
+                        colour="True"))+
+  labs(title="The estimated latent density using 'EHM'", colour= "Type")+
+  theme_bw()
 ```
 
 <img src="man/figures/README-plotLD-1.png" width="100%" style="display: block; margin: auto;" />
+
+- Posterior distribution for examinees
+
+Each examinee’s posterior distribution is identified in the E-step of
+the estimation algorithm (i.e., EM algorithm). Posterior distributions
+can be found in `Mod1$Pk`.
+
+``` r
+set.seed(1)
+selected_examinees <- sample(1:1000,6)
+post_sample <- data.frame(X=rep(seq(-6,6, length.out=121),6), 
+                          posterior = 10*c(t(Mod1$Pk[selected_examinees,])), 
+                          ID=rep(paste("examinee", selected_examinees), each=121))
+ggplot(data=post_sample, mapping=aes(x=X, y=posterior, group=ID))+
+  geom_line()+
+  labs(title="Posterior densities for selected examinees", x=expression(theta))+
+  facet_wrap(~ID, ncol=2)+
+  annotate(geom="line", x=seq(-6,6,length=121), 
+                        y=dist2(seq(-6,6,length=121),prob = .3, d=1.664, sd_ratio = 2), colour="grey")+
+  theme_bw()
+```
+
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%" />
