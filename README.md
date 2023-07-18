@@ -1,22 +1,29 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# IRTest
+# Welcome to **IRTest**!
+
+*Please feel free to* [create an
+issue](https://github.com/SeewooLi/IRTest/issues) *for bug reports or
+potential improvements.*
 
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/SeewooLi/IRTest/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/SeewooLi/IRTest/actions/workflows/R-CMD-check.yaml)
 [![CRAN
-status](https://www.r-pkg.org/badges/version/IRTest)](https://CRAN.R-project.org/package=IRTest)
+status](https://www.r-pkg.org/badges/version-last-release/IRTest)](https://CRAN.R-project.org/package=IRTest)
+[![downloads](https://cranlogs.r-pkg.org/badges/grand-total/IRTest)](https://cranlogs.r-pkg.org/badges/grand-total/IRTest)
+[![codecov](https://codecov.io/gh/SeewooLi/IRTest/branch/master/graph/badge.svg?token=N5RY2MYSM5)](https://app.codecov.io/gh/SeewooLi/IRTest)
 <!-- badges: end -->
 
-**IRTest** can be a useful tool for IRT (item response theory) parameter
-estimation, especially when the violation of normality assumption on
-latent distribution is suspected.  
+**IRTest** is a useful tool for $\mathcal{\color{red}{IRT}}$ (item
+response theory) parameter $\mathcal{\color{red}{est}}\text{imation}$,
+especially when the violation of normality assumption on latent
+distribution is suspected.  
 **IRTest** deals with uni-dimensional latent variable.  
-In **IRTest**, along with the conventional approach that assumes
-normality on latent distribution, several methods can be applied for
-estimation of latent distribution:  
+In **IRTest**, including the conventional usage of Gaussian
+distribution, several methods can be applied for estimation of latent
+distribution:  
 + empirical histogram method,  
 + two-component Gaussian mixture distribution,  
 + Davidian curve,  
@@ -24,7 +31,7 @@ estimation of latent distribution:
 
 ## Installation
 
-You can install **IRTest** on R-console with:
+**IRTest** can be installed on R-console with:
 
 ``` r
 install.packages("IRTest")
@@ -32,23 +39,21 @@ install.packages("IRTest")
 
 ## Functions
 
-Followings are functions of **IRTest** available for users.
+Followings are functions of **IRTest**.
 
 - `IRTest_Dich` is the estimation function when all items are
-  dichotomously scored.
+  *dichotomously* scored.
 
 - `IRTest_Poly` is the estimation function when all items are
-  polytomously scored.
+  *polytomously* scored.
 
-- `IRTest_Mix` is the estimation function for a mixed-format test, a
-  combination of dichotomous item(s) and polytomous item(s).
+- `IRTest_Mix` is the estimation function for *a mixed-format test*, a
+  test comprising both dichotomous item(s) and polytomous item(s).
 
-- `DataGeneration` generates several objects that are useful for
-  computer simulation studies. Among these are starting values for an
-  algorithm and artificial item-response data that can be passed to
-  `IRTest_Dich`, `IRTest_Poly`, or `IRTest_Mix`
-
-- `plot_LD` draws a plot of the estimated latent distribution.
+- `DataGeneration` generates several objects that can be useful for
+  computer simulation studies. Among these are starting values for the
+  estimation algorithm and artificial item-response data that can be
+  passed into `IRTest_Dich`, `IRTest_Poly`, or `IRTest_Mix`.
 
 - `dist2` is a probability density function of two-component Gaussian
   mixture distribution.
@@ -58,13 +63,16 @@ Followings are functions of **IRTest** available for users.
 
 ## Example
 
-A simulation study for a Rasch model can be done in following manners:
+A simple simulation study for a Rasch model can be done in following
+manners:
 
 ``` r
 library(IRTest)
 ```
 
-- An artificial data of 1000 examinees and 20 items.
+- Data generation
+
+An artificial data of 1000 examinees and 20 items.
 
 ``` r
 Alldata <- DataGeneration(seed = 123456789,
@@ -72,6 +80,7 @@ Alldata <- DataGeneration(seed = 123456789,
                           N=1000,
                           nitem_D = 20,
                           nitem_P = 0,
+                          latent_dist = "2NM",
                           d = 1.664,
                           sd_ratio = 2,
                           prob = 0.3)
@@ -96,13 +105,66 @@ Mod1 <- IRTest_Dich(initialitem = initialitem,
                     )
 ```
 
+- Summary of the result
+
+``` r
+summary(Mod1)
+#> Convergence:  
+#> Successfully converged below the threshold of 0.001 on 15th iterations. 
+#> 
+#> Model Fit:  
+#>    deviance   23315.8 
+#>         AIC   23593.8 
+#>         BIC   24275.98 
+#> 
+#> The Number of Parameters:  
+#>        item   20 
+#>        dist   119 
+#>       total   139 
+#> 
+#> The Number of Items:  
+#> dichotomous   20 
+#> polyotomous   0 
+#> 
+#> The Estimated Latent Distribution:  
+#> method - EHM 
+#> ----------------------------------------
+#>                                           
+#>                                           
+#>                         .                 
+#>         . .           @ @ @               
+#>         @ @         . @ @ @ @             
+#>       . @ @ @       @ @ @ @ @ .           
+#>       @ @ @ @ . . @ @ @ @ @ @ @ @         
+#>     . @ @ @ @ @ @ @ @ @ @ @ @ @ @ @       
+#>     @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @     
+#>   @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ @ . 
+#> +---------+---------+---------+---------+
+#> -2        -1        0         1         2
+```
+
 - Parameter estimation results
 
 ``` r
-### True item parameters 
 colnames(item) <- c("a", "b", "c")
-knitr::kable(item, format='simple', caption = "True item parameters")
+
+knitr::kables(
+  list(
+    ### True item parameters 
+    knitr::kable(item, format='simple', caption = "True item parameters", digits = 2)%>%
+  kableExtra::kable_styling(font_size = 4),
+
+    ### Estimated item parameters
+    knitr::kable(Mod1$par_est, format='simple', caption = "Estimated item parameters", digits = 2)%>%
+  kableExtra::kable_styling(font_size = 4)
+  )
+)
 ```
+
+<table class="kable_wrapper">
+<tbody>
+<tr>
+<td>
 
 |   a |     b |   c |
 |----:|------:|----:|
@@ -129,36 +191,38 @@ knitr::kable(item, format='simple', caption = "True item parameters")
 
 True item parameters
 
-``` r
+</td>
+<td>
 
-### Estimated item parameters
-knitr::kable(Mod1$par_est, format='simple', caption = "Estimated item parameters")
-```
-
-|   a |          b |   c |
-|----:|-----------:|----:|
-|   1 | -0.8177894 |   0 |
-|   1 |  0.9514716 |   0 |
-|   1 |  0.4703169 |   0 |
-|   1 | -0.0574434 |   0 |
-|   1 | -0.8503595 |   0 |
-|   1 | -0.4316589 |   0 |
-|   1 |  0.8852200 |   0 |
-|   1 | -0.3157931 |   0 |
-|   1 | -1.1680628 |   0 |
-|   1 |  0.5366363 |   0 |
-|   1 | -1.0744048 |   0 |
-|   1 | -1.1621301 |   0 |
-|   1 |  0.0709861 |   0 |
-|   1 |  1.2536640 |   0 |
-|   1 | -0.4265914 |   0 |
-|   1 |  0.2046360 |   0 |
-|   1 | -1.3770776 |   0 |
-|   1 |  0.5984116 |   0 |
-|   1 | -0.7533302 |   0 |
-|   1 | -1.6965297 |   0 |
+|   a |     b |   c |
+|----:|------:|----:|
+|   1 | -0.82 |   0 |
+|   1 |  0.95 |   0 |
+|   1 |  0.47 |   0 |
+|   1 | -0.06 |   0 |
+|   1 | -0.85 |   0 |
+|   1 | -0.43 |   0 |
+|   1 |  0.89 |   0 |
+|   1 | -0.32 |   0 |
+|   1 | -1.17 |   0 |
+|   1 |  0.54 |   0 |
+|   1 | -1.07 |   0 |
+|   1 | -1.16 |   0 |
+|   1 |  0.07 |   0 |
+|   1 |  1.25 |   0 |
+|   1 | -0.43 |   0 |
+|   1 |  0.20 |   0 |
+|   1 | -1.38 |   0 |
+|   1 |  0.60 |   0 |
+|   1 | -0.75 |   0 |
+|   1 | -1.70 |   0 |
 
 Estimated item parameters
+
+</td>
+</tr>
+</tbody>
+</table>
 
 ``` r
 
@@ -173,21 +237,33 @@ abline(a=0,b=1)
 
 <img src="man/figures/README-results-1.png" width="100%" style="display: block; margin: auto;" />
 
-- Result of latent distribution estimation
+- The result of latent distribution estimation
 
 ``` r
-plot_LD(Mod1)+
-  geom_line(mapping = aes(colour="Estimated"))+
-  geom_line(mapping=aes(x=seq(-6,6,length=121), 
-                        y=dist2(seq(-6,6,length=121),prob = .3, d=1.664, sd_ratio = 2), 
-                        colour="True"))+
-  labs(title="The estimated latent density using 'EHM'", colour= "Type")+
+plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
+  lims(
+    y = c(0, .75)
+  )+
+  geom_line(
+    mapping=aes(
+      x=seq(-6,6,length=121), 
+      y=dist2(
+        seq(-6,6,length=121),
+        prob = .3, 
+        d=1.664, 
+        sd_ratio = 2
+        ), 
+      colour="True"),
+    linewidth = 1)+
+  labs(
+    title="The estimated latent density using 'EHM'", colour= "Type"
+    )+
   theme_bw()
 ```
 
 <img src="man/figures/README-plotLD-1.png" width="100%" style="display: block; margin: auto;" />
 
-- Posterior distribution for examinees
+- Posterior distributions for the examinees
 
 Each examinee’s posterior distribution is identified in the E-step of
 the estimation algorithm (i.e., EM algorithm). Posterior distributions
@@ -196,15 +272,19 @@ can be found in `Mod1$Pk`.
 ``` r
 set.seed(1)
 selected_examinees <- sample(1:1000,6)
-post_sample <- data.frame(X=rep(seq(-6,6, length.out=121),6), 
-                          posterior = 10*c(t(Mod1$Pk[selected_examinees,])), 
-                          ID=rep(paste("examinee", selected_examinees), each=121))
-ggplot(data=post_sample, mapping=aes(x=X, y=posterior, group=ID))+
-  geom_line()+
-  labs(title="Posterior densities for selected examinees", x=expression(theta))+
+post_sample <- 
+  data.frame(
+    X = rep(seq(-6,6, length.out=121),6), 
+    prior = rep(dist2(seq(-6,6,length=121),prob = .3, d=1.664, sd_ratio = 2), 6),
+    posterior = 10*c(t(Mod1$Pk[selected_examinees,])), 
+    ID = rep(paste("examinee", selected_examinees), each=121)
+    )
+
+ggplot(data=post_sample, mapping=aes(x=X))+
+  geom_line(mapping=aes(y=posterior, group=ID, color='Posterior'))+
+  geom_line(mapping=aes(y=prior, group=ID, color='Prior'))+
+  labs(title="Posterior densities for selected examinees", x=expression(theta), y='density')+
   facet_wrap(~ID, ncol=2)+
-  annotate(geom="line", x=seq(-6,6,length=121), 
-                        y=dist2(seq(-6,6,length=121),prob = .3, d=1.664, sd_ratio = 2), colour="grey")+
   theme_bw()
 ```
 

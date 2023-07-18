@@ -21,10 +21,10 @@
 #' @param latent_dist A character string that determines latent distribution estimation method.
 #' Insert \code{"Normal"}, \code{"normal"}, or \code{"N"} to assume normal distribution on the latent distribution,
 #' \code{"EHM"} for empirical histogram method (Mislevy, 1984; Mislevy & Bock, 1985),
-#' \code{"Mixture"} for the method that uses two-component Gaussian mixture distribution (Li, 2021; Mislevy, 1984),
-#' \code{"DC"} for Davidian-curve method (Woods & Lin, 2009),
+#' \code{"Mixture"} or \code{"2NM"} for the method of two-component Gaussian mixture distribution (Li, 2021; Mislevy, 1984),
+#' \code{"DC"} or \code{"Davidian"} for Davidian-curve method (Woods & Lin, 2009),
 #' and \code{"KDE"} for kernel density estimation method (Li, 2022).
-#' The default value is set to \code{"Normal"} to follow the conventional assumption on latent distribution.
+#' The default value is set to \code{"Normal"} for the conventional normality assumption on latent distribution.
 #'
 #' @param max_iter A numeric value that determines the maximum number of iterations in the EM-MML.
 #' The default value is 200.
@@ -126,6 +126,7 @@
 #'                           N=1000,
 #'                           nitem_D = 0,
 #'                           nitem_P = 8,
+#'                           latent_dist = "2NM",
 #'                           d = 1.414,
 #'                           sd_ratio = 2,
 #'                           prob = 0.5)
@@ -150,9 +151,10 @@
 #'
 IRTest_Poly <- function(initialitem, data, range = c(-6,6), q = 121, model,
                         latent_dist="Normal", max_iter=200, threshold=0.0001,
-                        bandwidth="nrd", h=NULL){
+                        bandwidth="SJ-ste", h=NULL){
   Options = list(initialitem=initialitem, data=data, range=range, q=q, model=model,
-                 latent_dist=latent_dist, max_iter=max_iter, threshold=threshold)
+                 latent_dist=latent_dist, max_iter=max_iter, threshold=threshold,
+                 bandwidth=bandwidth,h=h)
   I <- initialitem
   Xk <- seq(range[1],range[2],length=q)
   Ak <- dist2(Xk, 0.5, 0, 1)/sum(dist2(Xk, 0.5, 0, 1))
@@ -189,22 +191,20 @@ IRTest_Poly <- function(initialitem, data, range = c(-6,6), q = 121, model,
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
-      post_den <- E$fk/sum(E$fk)
-      Xk <- E$Xk
-      lin <- lin_inex(Xk, post_den, range = range)
-      Xk <- lin$qp
-      post_den <- lin$qh
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range)
+      Xk <- ld_est$Xk
+      Ak <- ld_est$posterior_density
 
       diff <- max(abs(I-initialitem), na.rm = TRUE)
       I <- initialitem
-      Ak <- post_den
+
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
   }
 
   # Two-component normal mixture distribution
-  if(latent_dist=="Mixture"){
+  if(latent_dist %in% c("Mixture", "2NM")){
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
@@ -231,24 +231,21 @@ IRTest_Poly <- function(initialitem, data, range = c(-6,6), q = 121, model,
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
-      post_den <- E$fk/sum(E$fk)
-      Xk <- E$Xk
-      post_den <- lin_inex(Xk, post_den, range = range)$qh
-      nzindex <- round(post_den*N)!=0
-      SJPI <- density(rep(Xk[nzindex], times=round(post_den*N)[nzindex]), bw = bandwidth,n=q, from = range[1], to=range[2])
-      post_den <- lin_inex(Xk, SJPI$y/sum(SJPI$y), range = range)$qh
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, bandwidth=bandwidth, N=N, q=q)
+      Xk <- ld_est$Xk
+      Ak <- ld_est$posterior_density
 
       diff <- max(abs(I-initialitem), na.rm = TRUE)
       I <- initialitem
-      Ak <- post_den
+
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    bw <- c(SJPI$bw, SJPI$n)
+    bw <- ld_est$bw
   }
 
   # Davidian curve method
-  if(latent_dist=="DC"){
+  if(latent_dist %in% c("DC", "Davidian")){
     phipar <- nlminb(start = rep(1,h),
                      objective = optim_phi,
                      gradient = optim_phi_grad,
@@ -263,22 +260,13 @@ IRTest_Poly <- function(initialitem, data, range = c(-6,6), q = 121, model,
       M1 <- Mstep_Poly(E, item=initialitem, model = model)
       initialitem <- M1[[1]]
 
-      Xk <- E$Xk
-      phipar <- nlminb(start = phipar,
-                       objective = DC.LL,
-                       gradient = DC.grad,
-                       theta=E$Xk,
-                       freq = E$fk)$par
-
-      post_den <- dcurver::ddc(x = Xk, phi = phipar)
-      post_den <- post_den/sum(post_den)
-      lin <- lin_inex(Xk, post_den, range = range, rule = 2)
-      Xk <- lin$qp
-      post_den <- lin$qh
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, phipar=phipar)
+      Xk <- ld_est$Xk
+      Ak <- ld_est$posterior_density
 
       diff <- max(abs(I-initialitem), na.rm = TRUE)
       I <- initialitem
-      Ak <- post_den
+
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
@@ -295,20 +283,24 @@ IRTest_Poly <- function(initialitem, data, range = c(-6,6), q = 121, model,
   E$Pk[E$Pk==0]<- .Machine$double.xmin
   Ak[Ak==0] <- .Machine$double.xmin
   logL <- logL + as.numeric(E$fk%*%log(Ak)) - sum(E$Pk*log(E$Pk))
-  return(list(par_est=initialitem,
-              se=M1[[2]],
-              fk=E$fk,
-              iter=iter,
-              prob=prob,
-              d=d,
-              sd_ratio=sd_ratio,
-              quad=Xk,
-              diff=diff,
-              Ak=Ak,
-              Pk=E$Pk,
-              theta = EAP,
-              logL=-2*logL, # deviance
-              bw=bw,
-              Options = Options # specified argument values
-  ))
+  return(structure(
+    list(par_est=initialitem,
+         se=M1[[2]],
+         fk=E$fk,
+         iter=iter,
+         prob=prob,
+         d=d,
+         sd_ratio=sd_ratio,
+         quad=Xk,
+         diff=diff,
+         Ak=Ak,
+         Pk=E$Pk,
+         theta = EAP,
+         logL=-2*logL, # deviance
+         bw=bw,
+         Options = Options # specified argument values
+         ),
+    class = c("poly", "irtest", "list")
+    )
+  )
 }

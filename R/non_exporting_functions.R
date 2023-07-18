@@ -1,4 +1,17 @@
 #################################################################################################################
+# citation
+#################################################################################################################
+.onAttach <- function(libname, pkgname) {
+  package_citation <- "Li, S. (2022). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 1.0.0). R package."
+  package_URL <- "\n URL: https://CRAN.R-project.org/package=IRTest"
+  packageStartupMessage("Thank you for using IRTest!")
+  packageStartupMessage("Please cite the package as: \n")
+  packageStartupMessage(package_citation)
+  packageStartupMessage(package_URL)
+}
+
+
+#################################################################################################################
 # ICC
 #################################################################################################################
 P <- function(theta,a=1,b,c=0){
@@ -32,10 +45,10 @@ dnormal <- function(x, mean=0, sd=1){
 }
 
 
-# 2C Normal Mixture Distribution
-dist <- function(x, prob = 0.5, m = c(0,0), s = c(1,1)){
-  prob*dnormal(x, m[1], s[1])+(1-prob)*dnormal(x, m[2], s[2])
-}
+# # 2C Normal Mixture Distribution
+# dist <- function(x, prob = 0.5, m = c(0,0), s = c(1,1)){
+#   prob*dnormal(x, m[1], s[1])+(1-prob)*dnormal(x, m[2], s[2])
+# }
 
 
 #################################################################################################################
@@ -355,7 +368,7 @@ Mstep_Poly <- function(E, item, model="GPCM", max_iter=3, threshold=1e-7, EMiter
     } else warning("model is incorrect or unspecified.")
 
   }
-  return(list(item_estimated, se, Grad, IM))
+  return(list(item_estimated, se))
 }
 
 PDs <- function(probab, param, pmat, pcummat, a_supp, par, tcum){
@@ -459,6 +472,49 @@ lin_inex <- function(qp, qh, range, rule=2){
   return(list(qp=ap$x, qh=ap$y/sum(ap$y)))
 }
 
+#################################################################################################################
+# Latent distribution estimation
+#################################################################################################################
+latent_dist_est <- function(method, Xk, posterior, range,
+                            bandwidth = NULL, phipar=NULL, N=NULL, q=NULL){
+  if(method=='EHM'){
+    post_den <- posterior/sum(posterior)
+    lin <- lin_inex(Xk, post_den, range = range)
+  }
+  if(method=='KDE'){
+    post_den <- posterior/sum(posterior)
+    post_den <- lin_inex(Xk, post_den, range = range)$qh
+    nzindex <- round(post_den*N)!=0
+    SJPI <- density(rep(Xk[nzindex], times=round(post_den*N)[nzindex]),
+                    bw = bandwidth,
+                    n=q,
+                    from = range[1],
+                    to=range[2])
+    lin <- lin_inex(Xk, SJPI$y/sum(SJPI$y), range = range)
+  }
+  if(method %in% c('DC', 'Davidian')){
+    phipar <- nlminb(start = phipar,
+                     objective = DC.LL,
+                     gradient = DC.grad,
+                     theta= Xk,
+                     freq = posterior)$par
+
+    post_den <- dcurver::ddc(x = Xk, phi = phipar)
+    post_den <- post_den/sum(post_den)
+    lin <- lin_inex(Xk, post_den, range = range, rule = 2)
+  }
+
+  return(
+    list(
+      posterior_density = lin$qh,
+      Xk = lin$qp,
+      if(method=='KDE'){
+        bw <- c(SJPI$bw, SJPI$n)
+      } else NULL
+    )
+  )
+}
+
 
 #################################################################################################################
 # B matrix
@@ -471,14 +527,15 @@ B_mat <- function(h){
   umat <- diag(sqrt(eigen(mmat)$values))%*%t(eigen(mmat)$vectors)
   return(umat)
 }
-B_mat2 <- function(h){
-  mmat <- matrix(nrow = h+1, ncol = h+1)
-  for(i in 1:(1+h)){
-    mmat[i,] <- IRTest::GHc[(1:(1+h))+(i-1)]
-  }
-  umat <- diag(svd(mmat)$d^.25)%*%t(svd(mmat)$v)
-  return(umat)
-}
+
+# B_mat2 <- function(h){
+#   mmat <- matrix(nrow = h+1, ncol = h+1)
+#   for(i in 1:(1+h)){
+#     mmat[i,] <- IRTest::GHc[(1:(1+h))+(i-1)]
+#   }
+#   umat <- diag(svd(mmat)$d^.25)%*%t(svd(mmat)$v)
+#   return(umat)
+# }
 
 #################################################################################################################
 # c vector
@@ -499,38 +556,38 @@ c_vec <- function(phi){
 #################################################################################################################
 # Z vector
 #################################################################################################################
-Z_vec <- function(theta, h){
-  theta^(0:h)
-}
+# Z_vec <- function(theta, h){
+#   theta^(0:h)
+# }
 
 #################################################################################################################
 # polynomial
 #################################################################################################################
-DC_poly <- function(phi, theta, invB, cvec){
-  h <- length(phi)
-  m <- invB%*%cvec
-  dcpoly <- as.vector(t(m)%*%sapply(theta,Z_vec,h=h))
-  return(dcpoly)
-}
+# DC_poly <- function(phi, theta, invB, cvec){
+#   h <- length(phi)
+#   m <- invB%*%cvec
+#   dcpoly <- as.vector(t(m)%*%sapply(theta,Z_vec,h=h))
+#   return(dcpoly)
+# }
 
 
 #################################################################################################################
 # Davidian curve
 #################################################################################################################
-dDC <- function(phi, theta){
-  h <- length(phi)
-  invB <- solve(B_mat(h))
-  cvec <- c_vec(phi)
-  densDC <- (DC_poly(phi, theta, invB, cvec))^2*dnormal(theta)
-  return(densDC)
-}
+# dDC <- function(phi, theta){
+#   h <- length(phi)
+#   invB <- solve(B_mat(h))
+#   cvec <- c_vec(phi)
+#   densDC <- (DC_poly(phi, theta, invB, cvec))^2*dnormal(theta)
+#   return(densDC)
+# }
 
 #################################################################################################################
 # log-likelihood
 #################################################################################################################
-LLDC <- function(phi, theta, freq){
-  -freq%*%log(dDC(phi, theta))
-}
+# LLDC <- function(phi, theta, freq){
+#   -freq%*%log(dDC(phi, theta))
+# }
 
 #################################################################################################################
 # c-phi matrix
@@ -553,14 +610,14 @@ c_phi <- function(phi, cvec){
 #################################################################################################################
 # 1st derivative
 #################################################################################################################
-grad_DC <- function(phi, theta, freq){
-  h <- length(phi)
-  invB <- solve(B_mat(h))
-  cvec <- c_vec(phi)
-  matalg <- t(c_phi(phi, cvec))%*%t(invB)%*%sapply(c(theta),Z_vec,h=h)
-  dv1 <- -(2*freq/DC_poly(phi, theta, invB, cvec))%*%t(matalg)
-  return(dv1)
-}
+# grad_DC <- function(phi, theta, freq){
+#   h <- length(phi)
+#   invB <- solve(B_mat(h))
+#   cvec <- c_vec(phi)
+#   matalg <- t(c_phi(phi, cvec))%*%t(invB)%*%sapply(c(theta),Z_vec,h=h)
+#   dv1 <- -(2*freq/DC_poly(phi, theta, invB, cvec))%*%t(matalg)
+#   return(dv1)
+# }
 
 #################################################################################################################
 # Initial phi

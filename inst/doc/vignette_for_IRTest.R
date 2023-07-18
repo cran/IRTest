@@ -14,6 +14,7 @@ Alldata <- DataGeneration(seed = 123456789,
                           N=500,
                           nitem_D = 10,
                           nitem_P = 0,
+                          latent_dist = "2NM",
                           d = 1.664,
                           sd_ratio = 2,
                           prob = 0.3)
@@ -84,6 +85,9 @@ Mod1 <- IRTest_Dich(initialitem = initialitem,
 #                      h=4)
 
 ## ---- fig.align='center', fig.height=2.5, fig.width=6-------------------------
+### Summary
+summary(Mod1)
+
 ### The estimated item parameters
 Mod1$par_est
 
@@ -94,7 +98,8 @@ Mod1$se
 head(Mod1$theta)
 
 ### The estimated latent distribution
-plot_LD(Mod1, xlim = c(-6,6))
+plot(Mod1) +
+  lims(y = c(0, .5))
 
 ## -----------------------------------------------------------------------------
 Alldata <- DataGeneration(seed = 123456789,
@@ -103,6 +108,7 @@ Alldata <- DataGeneration(seed = 123456789,
                           N=1000,
                           nitem_D = 0,
                           nitem_P = 10,
+                          latent_dist = "2NM",
                           d = 1.414,
                           sd_ratio = 2,
                           prob = 0.5)
@@ -173,6 +179,9 @@ Mod1 <- IRTest_Poly(initialitem = initialitem,
 #                      h=4)
 
 ## ---- fig.align='center', fig.height=2.5, fig.width=6-------------------------
+### Summary
+summary(Mod1)
+
 ### The estimated item parameters
 Mod1$par_est
 
@@ -183,7 +192,8 @@ Mod1$se
 head(Mod1$theta)
 
 ### The estimated latent distribution
-plot_LD(Mod1, xlim = c(-6,6))
+plot(Mod1) +
+  lims(y = c(0, .5))
 
 ## -----------------------------------------------------------------------------
 Alldata <- DataGeneration(seed = 123456789,
@@ -193,6 +203,7 @@ Alldata <- DataGeneration(seed = 123456789,
                           N=1000,
                           nitem_D = 5,
                           nitem_P = 5,
+                          latent_dist = "2NM",
                           d = 1.664,
                           sd_ratio = 1,
                           prob = 0.5)
@@ -206,8 +217,9 @@ initialitemP <- Alldata$initialitem_P
 theta <- Alldata$theta
 
 ## ---- fig.align='center', fig.height=2.5, fig.width=6, echo=F-----------------
-ggplot(data = data.frame(x = c(-6,6)), aes(x)) +
+ggplot() +
   stat_function(fun = dist2, n = 101, args = list(prob = 0.5, d=1.664, sd_ratio = 1)) +
+  lims(y = c(0, .5)) +
   ylab("latent density") +
   xlab(expression(theta)) +
   scale_y_continuous(breaks = NULL)
@@ -281,6 +293,9 @@ Mod1 <- IRTest_Mix(initialitem_D = initialitemD,
 #                     h = 4)
 
 ## ---- fig.align='center', fig.height=2.5, fig.width=6-------------------------
+### Summary
+summary(Mod1)
+
 ### The estimated item parameters
 Mod1$par_est
 
@@ -291,5 +306,6 @@ Mod1$se
 head(Mod1$theta)
 
 ### The estimated latent distribution
-plot_LD(Mod1, xlim = c(-6,6))
+plot(Mod1) +
+  lims(y = c(0, .5))
 

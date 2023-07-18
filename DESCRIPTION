@@ -2,7 +2,7 @@ Package: IRTest
 Type: Package
 Title: Parameter Estimation of Item Response Theory with Estimation of
         Latent Distribution
-Version: 0.1.0
+Version: 1.0.0
 Authors@R: person("Seewoo", "Li", 
     email = "cu@yonsei.ac.kr",
     role = c("aut", "cre", "cph"))
@@ -10,7 +10,7 @@ Description: Item response theory (IRT) parameter estimation using marginal maxi
     (Bock & Aitkin, 1981 <doi:10.1007/BF02293801>). 
     Within parameter estimation algorithm, several methods for latent distribution estimation are available 
     (Li, 2022 <http://www.riss.kr/link?id=T16374105>).
-    Reflecting some features of the true latent distribution, these latent distribution estimation methods can possibly free the normality assumption on the latent distribution.
+    Reflecting some features of the true latent distribution, these latent distribution estimation methods can possibly enhance the estimation accuracy and free the normality assumption on the latent distribution.
 License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
@@ -23,8 +23,8 @@ Imports: betafunctions, dcurver, ggplot2
 Depends: R (>= 2.10)
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2023-04-02 16:26:08 UTC; CU
+Packaged: 2023-07-18 07:10:44 UTC; CU
 Author: Seewoo Li [aut, cre, cph]
 Maintainer: Seewoo Li <cu@yonsei.ac.kr>
 Repository: CRAN
-Date/Publication: 2023-04-02 16:50:02 UTC
+Date/Publication: 2023-07-18 07:30:02 UTC
