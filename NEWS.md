@@ -1,3 +1,49 @@
+# IRTest 1.7.0
+
+* Log-linear smoothing method (`latent_dist = "LLS"`) can be applied to estimate a latent distribution.
+
+# IRTest 1.6.0
+
+* `reliability` has been developed to calculate marginal reliability coefficient of IRT.
+
+# IRTest 1.5.2
+
+* Some of the polytomous items could be technically dichotomous when one or more of the categories are not observed in data.
+Now, these items can be analyised with the polytomous function.
+
+# IRTest 1.5.1
+
+* Rasch-type analysis imposes a constraint on slope parameters to be equal across all items.
+Before, they were fixed to 1 regardless of the characteristics of data.
+
+# IRTest 1.5.0
+
+* `plot_item` has been developed to draw an item response function.
+
+# IRTest 1.4.1
+
+* Enhanced algorithm convergence for `IRTest_Poly` when there exist one or more negative slope parameters.
+
+# IRTest 1.4.0
+
+* `item_fit` evaluates item fit.
+
+# IRTest 1.3.1
+
+* Starting values (`initialitem`) can be automatically generated.
+
+# IRTest 1.3.0
+
+* `NA` values are permitted for estimation functions.
+
+# IRTest 1.2.0
+
+* The `MLE` option for ability parameter estimation is added for polytomous data.
+
+# IRTest 1.1.0
+
+* The `PCM` model for polytomous data is available.
+
 # IRTest 1.0.0
 
 * Unit tests are more thoroughly conducted to enhance 'test coverage.'
@@ -9,7 +55,7 @@
 
 # IRTest 0.1.0
 
-* Ability parameter MLE is available for `IRTest_Dich`.
+* Ability parameter `MLE` is available for `IRTest_Dich`.
 * Data Generation with fixed item and/or ability parameters is available.
 
 # IRTest 0.0.2

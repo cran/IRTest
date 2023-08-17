@@ -16,6 +16,7 @@
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 #' @examples
+#' \dontrun{
 #' # Data generation and model fitting
 #'
 #' Alldata <- DataGeneration(seed = 1,
@@ -47,16 +48,16 @@
 #'
 #' plot(x=M1, linewidth = 1, color = 'red') +
 #'   ggplot2::lims(x = c(-6, 6), y = c(0, .5))
-#'
+#'}
 plot.irtest <- function(x, ...){
   if(x[["Options"]][["latent_dist"]] %in% c("Mixture", "2NM")){
     plt <- ggplot2::ggplot() +
       stat_function(
         fun = dist2,
         args = list(
-          prob = x$prob,
-          d=x$d,
-          sd_ratio = x$sd_ratio
+          prob = x$density_par$prob,
+          d=x$density_par$d,
+          sd_ratio = x$density_par$sd_ratio
           ),
         ...
         )

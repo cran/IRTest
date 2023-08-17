@@ -17,10 +17,22 @@
 #'
 summary.irtest <- function(object, ...){
   sum_result <- list()
+
   sum_result$convergence <- if(object$diff<=object$Options$threshold){
-    sprintf("Successfully converged below the threshold of %s on %sth iterations.",
+    stndrdth <- if(object$iter%%10==1){
+      "st"
+    } else if(object$iter%%10==2){
+      "nd"
+    } else if(object$iter%%10==3){
+      "rd"
+    } else {
+      "th"
+    }
+    sprintf("Successfully converged below the threshold of %s on %s%s iterations.",
             as.character(object$Options$threshold),
-            as.character(object$iter))
+            as.character(object$iter),
+            stndrdth
+            )
   } else {
     sprintf("Convergence failed to meet the threshold of %s within %s iterations.",
             as.character(object$Options$threshold),
@@ -69,14 +81,27 @@ summary.irtest <- function(object, ...){
       sum(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH")) +
       2*sum(object$Options$model %in% c(2, "2PL")) +
       3*sum(object$Options$model %in% c(3, "3PL"))
+    if(all(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH"))){
+      n_par$item <- n_par$item-1
+    }
   } else if(any(class(object) == "poly")){
-    n_par$item <- sum(!is.na(object$par_est))
+    if(object$Options$model == "PCM"){
+      n_par$item <- sum(!is.na(object$par_est[,-1]))-1
+    } else if(object$Options$model == "GPCM"){
+      n_par$item <- sum(!is.na(object$par_est))
+    }
   } else if(any(class(object) == "mix")){
     n_par$item <-
       sum(object$Options$model_D %in% c(1, "1PL", "Rasch", "RASCH")) +
       2*sum(object$Options$model_D %in% c(2, "2PL")) +
-      3*sum(object$Options$model_D %in% c(3, "3PL")) +
-      sum(!is.na(object$par_est$Polytomous))
+      3*sum(object$Options$model_D %in% c(3, "3PL"))
+    if(object$Options$model_P == "PCM"){
+      n_par$item <- n_par$item +
+        sum(!is.na(object$par_est$Polytomous[,-1]))
+    } else if(object$Options$model_P == "GPCM"){
+      n_par$item <- n_par$item +
+        sum(!is.na(object$par_est$Polytomous))
+    }
   }
 
   # latent distribution parameters
@@ -98,6 +123,10 @@ summary.irtest <- function(object, ...){
   }
   # Davidian curve method
   else if(object$Options$latent_dist%in% c("DC", "Davidian")){
+    n_par$dist <- object$Options$h
+  }
+  # Log-linear smoothing
+  else if(object$Options$latent_dist%in% c("LLS")){
     n_par$dist <- object$Options$h
   }
 

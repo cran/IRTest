@@ -5,14 +5,14 @@
 \title{Item and ability parameters estimation for a mixed-format item response data}
 \usage{
 IRTest_Mix(
-  initialitem_D,
-  initialitem_P,
   data_D,
   data_P,
+  model_D = "2PL",
+  model_P = "GPCM",
   range = c(-6, 6),
   q = 121,
-  model_D,
-  model_P = "GPCM",
+  initialitem_D = NULL,
+  initialitem_P = NULL,
   latent_dist = "Normal",
   max_iter = 200,
   threshold = 1e-04,
@@ -21,34 +21,35 @@ IRTest_Mix(
 )
 }
 \arguments{
-\item{initialitem_D}{A matrix of initial dichotomous item parameter values for starting the estimation algorithm.}
-
-\item{initialitem_P}{A matrix of initial polytomous item parameter values for starting the estimation algorithm.}
-
 \item{data_D}{A matrix of item responses where responses are coded as 0 or 1.
 Rows and columns indicate examinees and items, respectively.}
 
 \item{data_P}{A matrix of polytomous item responses where responses are coded as \code{0, 1, ...}, or \code{m} for an \code{m+1} category item.
 Rows and columns indicate examinees and items, respectively.}
 
+\item{model_D}{A vector that represents types of item characteristic functions applied to each item.
+Insert \code{1}, \code{"1PL"}, \code{"Rasch"}, or \code{"RASCH"} for one-parameter logistic model,
+\code{2}, \code{"2PL"} for two-parameter logistic model,
+and \code{3}, \code{"3PL"} for three-parameter logistic model. The default is \code{"2PL"}.}
+
+\item{model_P}{Currently, only the default (\code{"GPCM"}) is available.}
+
 \item{range}{Range of the latent variable to be considered in the quadrature scheme.
 The default is from \code{-6} to \code{6}: \code{c(-6, 6)}.}
 
 \item{q}{A numeric value that represents the number of quadrature points. The default value is 121.}
 
-\item{model_D}{A vector that represents types of item characteristic functions applied to each item.
-Insert \code{1}, \code{"1PL"}, \code{"Rasch"}, or \code{"RASCH"} for one-parameter logistic model,
-\code{2}, \code{"2PL"} for two-parameter logistic model,
-and \code{3}, \code{"3PL"} for three-parameter logistic model.}
+\item{initialitem_D}{A matrix of initial dichotomous item parameter values for starting the estimation algorithm.}
 
-\item{model_P}{Currently, only the default (\code{"GPCM"}) is available.}
+\item{initialitem_P}{A matrix of initial polytomous item parameter values for starting the estimation algorithm.}
 
 \item{latent_dist}{A character string that determines latent distribution estimation method.
 Insert \code{"Normal"}, \code{"normal"}, or \code{"N"} to assume normal distribution on the latent distribution,
 \code{"EHM"} for empirical histogram method (Mislevy, 1984; Mislevy & Bock, 1985),
 \code{"Mixture"} or \code{"2NM"} for the method of two-component Gaussian mixture distribution (Li, 2021; Mislevy, 1984),
 \code{"DC"} or \code{"Davidian"} for Davidian-curve method (Woods & Lin, 2009),
-and \code{"KDE"} for kernel density estimation method (Li, 2022).
+\code{"KDE"} for kernel density estimation method (Li, 2022),
+and \code{"LLS"} for log-linear smoothing method (Casabianca, Lewis, 2015).
 The default value is set to \code{"Normal"} for the conventional normality assumption on latent distribution.}
 
 \item{max_iter}{A numeric value that determines the maximum number of iterations in the EM-MML.
@@ -75,13 +76,6 @@ The first object of \code{se} is the matrix of standard errors for dichotomous i
 and The second object is the matrix of standard errors for polytomous items.}
 \item{fk}{The estimated frequencies of examinees at each quadrature points.}
 \item{iter}{The number of EM-MML iterations required for the convergence.}
-\item{prob}{The estimated \eqn{\pi = \frac{n_1}{N}} parameter of two-component Gaussian mixture distribution, where \eqn{n_1} is the estimated number of examinees who belong to the first Gaussian component and \eqn{N} is the total number of examinees (Li, 2021).}
-\item{d}{The estimated \eqn{\delta = \frac{\mu_2 - \mu_1}{\bar{\sigma}}} parameter of two-component Gaussian mixture distribution,
-where \eqn{\mu_1} is the estimated mean of the first Gaussian component,
-\eqn{\mu_2} is the estimated mean of the second Gaussian component,
-and \eqn{\bar{\sigma} = 1} is the standard deviation of the latent distribution (Li, 2021).
-Without loss of generality, \eqn{\mu_2 \ge \mu_1}, thus \eqn{\delta \ge 0}, is assumed.}
-\item{sd_ratio}{The estimated \eqn{\zeta = \frac{\sigma_2}{\sigma_1}} parameter of two-component Gaussian mixture distribution, where \eqn{\sigma_1} is the estimated standard deviation of the first Gaussian component, \eqn{\sigma_2} is the estimated standard deviation of the second Gaussian component (Li, 2021).}
 \item{quad}{The location of quadrature points.}
 \item{diff}{The final value of the monitored maximum item parameter change.}
 \item{Ak}{The estimated discrete latent distribution.
@@ -90,8 +84,16 @@ It is discrete (i.e., probability mass function) since quadrature scheme of EM-M
 \item{theta}{The estimated ability parameter values.
 Expected \emph{a posteriori} (EAP) is used for ability parameter estimation.}
 \item{logL}{The deviance (i.e., -2\emph{log}L).}
-\item{bw}{The bandwidth used.}
-\item{Options}{A replication of input arguments.}
+\item{density_par}{
+The estimated density parameters.
+If \code{latent_dist = "2NM"}, \code{prob} is the estimated \eqn{\pi = \frac{n_1}{N}} parameter of two-component Gaussian mixture distribution, where \eqn{n_1} is the estimated number of examinees who belong to the first Gaussian component and \eqn{N} is the total number of examinees;
+\code{d} is the estimated \eqn{\delta = \frac{\mu_2 - \mu_1}{\bar{\sigma}}} parameter of two-component Gaussian mixture distribution,
+where \eqn{\mu_1} is the estimated mean of the first Gaussian component,
+\eqn{\mu_2} is the estimated mean of the second Gaussian component,
+and \eqn{\bar{\sigma} = 1} is the standard deviation of the latent distribution; and
+\code{sd_ratio} is the estimated \eqn{\zeta = \frac{\sigma_2}{\sigma_1}} parameter of two-component Gaussian mixture distribution, where \eqn{\sigma_1} is the estimated standard deviation of the first Gaussian component, \eqn{\sigma_2} is the estimated standard deviation of the second Gaussian component (Li, 2021).
+Without loss of generality, \eqn{\mu_2 \ge \mu_1}, thus \eqn{\delta \ge 0}, is assumed.}
+\item{Options}{A replication of input arguments and other information.}
 }
 \description{
 This function estimates IRT item and ability parameters when a test consists of mixed-format items (i.e., a combination of dichotomous and polytomous items).
@@ -118,9 +120,15 @@ Dichotomous: The probabilities for correct response (\eqn{u=1}) in one-, two-, a
 
 }
 \item{
-Polytomous: The probability for scoring \eqn{k} (i.e., \eqn{u=k; k=0, 1, ..., m; m \ge 2}) in generalized partial credit model (GPCM) can be expressed as follows;
+Polytomous: The probability for scoring \eqn{k} (i.e., \eqn{u=k; k=0, 1, ..., m; m \ge 2})can be expressed as follows;
 }{
-1) generalized partial credit model (GPCM)
+1) partial credit model (PCM)
+\deqn{P(u=0|\theta, b_1, ..., b_{m})=\frac{1}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
+\deqn{P(u=1|\theta, b_1, ..., b_{m})=\frac{\exp{(\theta-b_1)}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{\theta-b_v}\right]}}}}
+\deqn{\vdots}
+\deqn{P(u=m|\theta, b_1, ..., b_{m})=\frac{\exp{\left[\sum_{v=1}^{m}{\theta-b_v}\right]}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{\theta-b_v}\right]}}}}
+
+2) generalized partial credit model (GPCM)
 \deqn{P(u=0|\theta, a, b_1, ..., b_{m})=\frac{1}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
 \deqn{P(u=1|\theta, a, b_1, ..., b_{m})=\frac{\exp{(a(\theta-b_1))}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
 \deqn{\vdots}
@@ -150,6 +158,9 @@ where \eqn{h} corresponds to the argument \code{h} and determines the degree of 
 where \eqn{N} is the number of examinees, \eqn{\theta_j} is \eqn{j}th examinee's ability parameter, \eqn{h} is the bandwidth which corresponds to the argument \code{bw}, and \eqn{K( \bullet )} is a kernel function.
 The Gaussian kernel is used in this function.
 
+5) Log-linear smoothing method
+\deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 }
 }
 }
@@ -195,6 +206,8 @@ M1 <- IRTest_Mix(initialitem_D = initialitemD,
 }
 \references{
 Bock, R. D., & Aitkin, M. (1981). Marginal maximum likelihood estimation of item parameters: Application of an EM algorithm. \emph{Psychometrika, 46}(4), 443-459.
+
+Casabianca, J. M., & Lewis, C. (2015). IRT item parameter recovery with marginal maximum likelihood estimation using loglinear smoothing models. \emph{Journal of Educational and Behavioral Statistics, 40}(6), 547-578.
 
 Lee, W. C., Kim, S. Y., Choi, J., & Kang, Y. (2020). IRT Approaches to Modeling Scores on Mixed-Format Tests. \emph{Journal of Educational Measurement, 57}(2), 230-254.
 
