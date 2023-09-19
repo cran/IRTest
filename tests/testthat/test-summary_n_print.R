@@ -59,19 +59,18 @@ test_that(
   item_fit(Mod1)
   item_fit(Mod1, bin.center="median")
   plot(Mod1)
-  reliability(Mod1, level = "test")
-  reliability(Mod1, level = "item")
+  reliability(Mod1)
 
 
   # Polytomous
-  Alldata <- DataGeneration(seed = 1,
+  Alldata <- DataGeneration(seed = 10,
                             model_P = "GPCM",
                             categ = rep(c(3,7), each = 5),
-                            N=500,
+                            N=2000,
                             nitem_D = 0,
                             nitem_P = 10,
                             latent_dist = "2NM",
-                            d = 1.414,
+                            d = .894,
                             sd_ratio = 2,
                             prob = 0.5)
 
@@ -91,8 +90,7 @@ test_that(
   item_fit(Mod1)
   item_fit(Mod1, bin.center="median")
   plot(Mod1)
-  reliability(Mod1, level = "test")
-  reliability(Mod1, level = "item")
+  reliability(Mod1)
   plot_item(Mod1,1)
 
   Mod1 <- IRTest_Poly(data = data,
@@ -137,8 +135,7 @@ test_that(
   item_fit(Mod1)
   item_fit(Mod1, bin.center="median")
   plot(Mod1)
-  reliability(Mod1, level = "test")
-  reliability(Mod1, level = "item")
+  reliability(Mod1)
   plot_item(Mod1,1,type="d")
   plot_item(Mod1,1,type="p")
 
@@ -154,8 +151,7 @@ test_that(
   item_fit(Mod1)
   item_fit(Mod1, bin.center="median")
   plot(Mod1)
-  reliability(Mod1, level = "test")
-  reliability(Mod1, level = "item")
+  reliability(Mod1)
   plot_item(Mod1,1,type="d")
   plot_item(Mod1,1,type="p")
 }

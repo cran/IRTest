@@ -8,12 +8,6 @@
 #' @return A plot of estimated latent distribution.
 #' @export
 #'
-#' @author Seewoo Li \email{cu@@yonsei.ac.kr}
-#'
-#' @examples
-#' # Summary
-#'
-#'
 #'
 summary.irtest <- function(object, ...){
   sum_result <- list()
@@ -50,7 +44,8 @@ summary.irtest <- function(object, ...){
     data.frame(
       deviance = object$logL,
       AIC = object$logL+2*sum_result$n_par$total,
-      BIC = object$logL+log(sum_result$n_respondents)*sum_result$n_par$total
+      BIC = object$logL+log(sum_result$n_respondents)*sum_result$n_par$total,
+      HQ = object$logL+2*sum_result$n_par$total*log(log(sum_result$n_respondents))
     )
 
   sum_result$par_est <- object$par_est
@@ -81,13 +76,13 @@ summary.irtest <- function(object, ...){
       sum(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH")) +
       2*sum(object$Options$model %in% c(2, "2PL")) +
       3*sum(object$Options$model %in% c(3, "3PL"))
-    if(all(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH"))){
-      n_par$item <- n_par$item-1
-    }
+    # if(all(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH"))){
+    #   n_par$item <- n_par$item-1
+    # }
   } else if(any(class(object) == "poly")){
     if(object$Options$model == "PCM"){
-      n_par$item <- sum(!is.na(object$par_est[,-1]))-1
-    } else if(object$Options$model == "GPCM"){
+      n_par$item <- sum(!is.na(object$par_est[,-1]))
+    } else if(object$Options$model %in% c("GPCM", "GRM")){
       n_par$item <- sum(!is.na(object$par_est))
     }
   } else if(any(class(object) == "mix")){
@@ -98,7 +93,7 @@ summary.irtest <- function(object, ...){
     if(object$Options$model_P == "PCM"){
       n_par$item <- n_par$item +
         sum(!is.na(object$par_est$Polytomous[,-1]))
-    } else if(object$Options$model_P == "GPCM"){
+    } else if(object$Options$model_P %in% c("GPCM", "GRM")){
       n_par$item <- n_par$item +
         sum(!is.na(object$par_est$Polytomous))
     }
@@ -128,6 +123,13 @@ summary.irtest <- function(object, ...){
   # Log-linear smoothing
   else if(object$Options$latent_dist%in% c("LLS")){
     n_par$dist <- object$Options$h
+  }
+
+  if(any(class(object) %in% c("dich", "poly"))&all(object$Options$model %in% c(1, "1PL", "Rasch", "RASCH","PCM"))){
+    n_par$dist <- n_par$dist+1
+  }
+  if(any(class(object) == "mix")&all(c(object$Options$model_D,object$Options$model_P) %in% c(1, "1PL", "Rasch", "RASCH","PCM"))){
+    n_par$dist <- n_par$dist+1
   }
 
   # the total number of parameters

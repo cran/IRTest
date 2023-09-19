@@ -23,7 +23,7 @@ IRTest_Poly(
 Rows and columns indicate examinees and items, respectively.}
 
 \item{model}{A character value that represents the type of a item characteristic function applied to the items.
-Currently, \code{PCM} and \code{GPCM} are available. The default is \code{"GPCM"}.}
+Currently, \code{PCM}, \code{GPCM}, and \code{GRM} are available. The default is \code{"GPCM"}.}
 
 \item{range}{Range of the latent variable to be considered in the quadrature scheme.
 The default is from \code{-6} to \code{6}: \code{c(-6, 6)}.}
@@ -71,8 +71,7 @@ This function returns a \code{list} which contains several objects:
 \item{Ak}{The estimated discrete latent distribution.
 It is discrete (i.e., probability mass function) since quadrature scheme of EM-MML is used.}
 \item{Pk}{The posterior probabilities for each examinees at each quadrature points.}
-\item{theta}{The estimated ability parameter values.
-Expected \emph{a posteriori} (EAP) is used for ability parameter estimation.}
+\item{theta}{The estimated ability parameter values.}
 \item{theta_se}{The asymptotic standard errors of ability parameter estimates. Available only when \code{ability_method = "MLE"}.
 If an examinee answers all or none of the items correctly, the function returns \code{NA}.}
 \item{logL}{The deviance (i.e., -2\emph{log}L).}
@@ -135,44 +134,31 @@ where \eqn{N} is the number of examinees, \eqn{\theta_j} is \eqn{j}th examinee's
 The Gaussian kernel is used in this function.
 
 5) Log-linear smoothing method
-\deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+\deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 
 }
 }
 }
 \examples{
+\dontrun{
 # A preparation of dichotomous item response data
 
-Alldata <- DataGeneration(seed = 1,
-                          model_P = "GPCM",
-                          categ = rep(3:4, each = 4),
-                          N=1000,
-                          nitem_D = 0,
-                          nitem_P = 8,
-                          latent_dist = "2NM",
-                          d = 1.414,
-                          sd_ratio = 2,
-                          prob = 0.5)
-
-data <- Alldata$data_P
-item <- Alldata$item_P
-initialitem <- Alldata$initialitem_P
-theta <- Alldata$theta
-
+data <- DataGeneration(seed = 1,
+                       model_P = "GPCM",
+                       categ = rep(3:4, each = 4),
+                       N=1000,
+                       nitem_D = 0,
+                       nitem_P = 8,
+                       latent_dist = "2NM",
+                       d = 1.414,
+                       sd_ratio = 2,
+                       prob = 0.5)$data_P
 
 # Analysis
 
-M1 <- IRTest_Poly(initialitem = initialitem,
-                  data = data,
-                  model = "GPCM",
-                  latent_dist = "KDE",
-                  bandwidth = "SJ-ste", # an argument required only when "latent_dist = 'KDE'"
-                  max_iter = 200,
-                  threshold = .001,
-                  h=4 # an argument required only when "latent_dist = 'DC'"
-                  )
-
+M1 <- IRTest_Poly(data)
+}
 }
 \references{
 Bock, R. D., & Aitkin, M. (1981). Marginal maximum likelihood estimation of item parameters: Application of an EM algorithm. \emph{Psychometrika, 46}(4), 443-459.

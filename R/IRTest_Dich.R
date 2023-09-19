@@ -80,7 +80,7 @@
 #' The Gaussian kernel is used in this function.
 #'
 #' 5) Log-linear smoothing method
-#' \deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+#' \deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 #' where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 #' }
 #' }
@@ -133,37 +133,39 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # A preparation of dichotomous item response data
 #'
-#' Alldata <- DataGeneration(seed = 1,
-#'                           model_D = rep(1, 10),
-#'                           N=500,
-#'                           nitem_D = 10,
-#'                           nitem_P = 0,
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
+#' data <- DataGeneration(seed = 1,
+#'                        model_D = rep(1, 10),
+#'                        N=500,
+#'                        nitem_D = 10,
+#'                        nitem_P = 0,
+#'                        latent_dist = "2NM",
+#'                        d = 1.664,
+#'                        sd_ratio = 2,
+#'                        prob = 0.3)$data_D
 #'
-#' data <- Alldata$data_D
-#' item <- Alldata$item_D
-#' initialitem <- Alldata$initialitem_D
-#' theta <- Alldata$theta
 #'
 #' # Analysis
 #'
-#' M1 <- IRTest_Dich(data = data,
-#'                   model = rep(1,10),
-#'                   latent_dist = "KDE",
-#'                   bandwidth = "SJ-ste", # an argument required only when "latent_dist = 'KDE'"
-#'                   max_iter = 200,
-#'                   threshold = .001,
-#'                   h=4 # an argument required only when "latent_dist = 'DC'"
-#'                   )
-#'
+#' M1 <- IRTest_Dich(data)
+#'}
 IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem=NULL,
                         ability_method = 'EAP', latent_dist="Normal", max_iter=200,
                         threshold=0.0001, bandwidth="SJ-ste", h=NULL){
+
+  categories <- apply(data, MARGIN = 2, FUN = extract_cat, simplify = FALSE)
+
+  if(
+    !all(
+      unlist(
+        lapply(categories, length)
+        )==2
+      )
+    ) stop("Not all items are dichotomously scored.")
+
+  data <- reorder_mat(as.matrix(data))
 
   if(is.null(initialitem)){
     initialitem <- matrix(rep(c(1,0,0), each = ncol(data)), ncol = 3)
@@ -174,7 +176,8 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
 
   Options = list(initialitem=initialitem, data=data, range=range, q=q, model=model,
                  ability_method=ability_method,latent_dist=latent_dist,
-                 max_iter=max_iter, threshold=threshold,bandwidth=bandwidth, h=h)
+                 max_iter=max_iter, threshold=threshold,bandwidth=bandwidth, h=h,
+                 categories=categories)
 
   I <- initialitem
   Xk <- seq(range[1],range[2],length=q)
@@ -296,9 +299,7 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
     density_par <- nlminb(start = rep(1,h),
                      objective = optim_phi,
                      gradient = optim_phi_grad,
-                     hp=h,
-                     lower = -pi/2,
-                     upper = pi/2)$par
+                     hp=h)$par
 
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
@@ -307,9 +308,10 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
       M1 <- M1step(E, item=initialitem, model = model)
       initialitem <- M1[[1]]
 
-      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par)
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par,N=N)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
+      density_par <- ld_est$par
 
       if(all(model %in% c(1, "1PL", "Rasch", "RASCH"))){
         initialitem[,1] <- initialitem[,1]*ld_est$s
@@ -322,7 +324,6 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
 
   # Log-linear smoothing method
@@ -344,6 +345,11 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
         initialitem[,1] <- initialitem[,1]*ld_est$s
         initialitem[,2] <- initialitem[,2]/ld_est$s
         M1[[2]][,2] <- M1[[2]][,2]/ld_est$s
+        if(iter>3){
+          density_par <- ld_est$par
+        }
+      } else {
+        density_par <- ld_est$par
       }
 
       diff <- max(abs(I-initialitem), na.rm = TRUE)
@@ -351,7 +357,6 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
 
   # ability parameter estimation
@@ -363,9 +368,9 @@ IRTest_Dich <- function(data, model="2PL", range = c(-6,6), q = 121, initialitem
     theta <- mle_result[[1]]
     theta_se <- mle_result[[2]]
   }
-
-  colnames(initialitem) <- c("a", "b", "c")
-  colnames(M1[[2]]) <- c("a", "b", "c")
+  dn <- list(colnames(data),c("a", "b", "c"))
+  dimnames(initialitem) <- dn
+  dimnames(M1[[2]]) <- dn
 
   # preparation for outputs
 

@@ -15,16 +15,20 @@
 #' Rows and columns indicate examinees and items, respectively.
 #' @param data_P A matrix of polytomous item responses where responses are coded as \code{0, 1, ...}, or \code{m} for an \code{m+1} category item.
 #' Rows and columns indicate examinees and items, respectively.
-#' @param model_D A vector that represents types of item characteristic functions applied to each item.
+#' @param model_D A vector dichotomous item response models.
 #' Insert \code{1}, \code{"1PL"}, \code{"Rasch"}, or \code{"RASCH"} for one-parameter logistic model,
 #' \code{2}, \code{"2PL"} for two-parameter logistic model,
 #' and \code{3}, \code{"3PL"} for three-parameter logistic model. The default is \code{"2PL"}.
-#' @param model_P Currently, only the default (\code{"GPCM"}) is available.
+#' @param model_P A character value of an item response model.
+#' Currently, \code{PCM}, \code{GPCM}, and \code{GRM} are available. The default is \code{"GPCM"}.
 #' @param range Range of the latent variable to be considered in the quadrature scheme.
 #' The default is from \code{-6} to \code{6}: \code{c(-6, 6)}.
 #' @param q A numeric value that represents the number of quadrature points. The default value is 121.
 #' @param initialitem_D A matrix of initial dichotomous item parameter values for starting the estimation algorithm.
 #' @param initialitem_P A matrix of initial polytomous item parameter values for starting the estimation algorithm.
+#' @param ability_method The ability parameter estimation method.
+#' The available options are Expected \emph{a posteriori} (\code{EAP}) and Maximum Likelihood Estimates (\code{MLE}).
+#' The default is \code{EAP}.
 #' @param latent_dist A character string that determines latent distribution estimation method.
 #' Insert \code{"Normal"}, \code{"normal"}, or \code{"N"} to assume normal distribution on the latent distribution,
 #' \code{"EHM"} for empirical histogram method (Mislevy, 1984; Mislevy & Bock, 1985),
@@ -100,7 +104,7 @@
 #' The Gaussian kernel is used in this function.
 #'
 #' 5) Log-linear smoothing method
-#' \deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+#' \deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 #' where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 #' }
 #' }
@@ -119,8 +123,9 @@
 #' \item{Ak}{The estimated discrete latent distribution.
 #' It is discrete (i.e., probability mass function) since quadrature scheme of EM-MML is used.}
 #' \item{Pk}{The posterior probabilities for each examinees at each quadrature points.}
-#' \item{theta}{The estimated ability parameter values.
-#' Expected \emph{a posteriori} (EAP) is used for ability parameter estimation.}
+#' \item{theta}{The estimated ability parameter values.}
+#' \item{theta_se}{The asymptotic standard errors of ability parameter estimates. Available only when \code{ability_method = "MLE"}.
+#' If an examinee answers all or none of the items correctly, the function returns \code{NA}.}
 #' \item{logL}{The deviance (i.e., -2\emph{log}L).}
 #' \item{density_par}{
 #' The estimated density parameters.
@@ -159,6 +164,7 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # A preparation of mixed-format item response data
 #'
 #' Alldata <- DataGeneration(seed = 2,
@@ -176,32 +182,21 @@
 #'                           sd_ratio = 2,
 #'                           prob = 0.3)
 #'
-#' DataD <- Alldata$data_D
-#' DataP <- Alldata$data_P
-#' itemD <- Alldata$item_D
-#' itemP <- Alldata$item_P
-#' initialitemD <- Alldata$initialitem_D
-#' initialitemP <- Alldata$initialitem_P
-#' theta <- Alldata$theta
+#' DataD <- Alldata$data_D   # item response data for the dichotomous items
+#' DataP <- Alldata$data_P   # item response data for the polytomous items
 #'
 #' # Analysis
 #'
-#' M1 <- IRTest_Mix(initialitem_D = initialitemD,
-#'                  initialitem_P = initialitemP,
-#'                  data_D = DataD,
-#'                  data_P = DataP,
-#'                  model_D = rep(1:2, each=3),
-#'                  latent_dist = "KDE",
-#'                  bandwidth = "SJ-ste",
-#'                  max_iter = 200,
-#'                  threshold = .001,
-#'                  h=9)
-#'
+#' M1 <- IRTest_Mix(DataD, DataP)
+#'}
 IRTest_Mix <- function(data_D, data_P, model_D="2PL",
                        model_P="GPCM", range = c(-6,6),q = 121,
                        initialitem_D=NULL, initialitem_P=NULL,
+                       ability_method="EAP",
                        latent_dist="Normal", max_iter=200, threshold=0.0001,
                        bandwidth="SJ-ste", h=NULL){
+
+  categories <- list()
 
   if(is.null(initialitem_D)){
     initialitem_D <- matrix(rep(c(1,0,0), each = ncol(data_D)), ncol = 3)
@@ -210,16 +205,21 @@ IRTest_Mix <- function(data_D, data_P, model_D="2PL",
     model_D <- rep(model_D, ncol(data_D))
   }
 
-  categories <- apply(data_P, MARGIN = 2, FUN = extract_cat)
+  categories$Dichotomous <- apply(data_D, MARGIN = 2, FUN = extract_cat, simplify = FALSE)
+  categories$Polytomous <- apply(data_P, MARGIN = 2, FUN = extract_cat, simplify = FALSE)
 
+  data_D <- reorder_mat(as.matrix(data_D))
   data_P <- reorder_mat(as.matrix(data_P))
   if(is.null(initialitem_P)){
     category <- apply(data_P, 2, max, na.rm = TRUE)
-    initialitem_P <- matrix(nrow = ncol(data_P), ncol = 7)
+    initialitem_P <- matrix(nrow = ncol(data_P), ncol = max(category)+1)
     initialitem_P[,1] <- 1
-    initialitem_P[,2] <- 0
-    for(i in 3:7){
-      initialitem_P[category>(i-2),i] <- 0
+    for(i in 1:nrow(initialitem_P)){
+      if(model_P!="GRM"){
+        initialitem_P[i, 2:(category[i]+1)] <- 0
+      } else {
+        initialitem_P[i, 2:(category[i]+1)] <- seq(-.01,.01,length.out=category[i])
+      }
     }
   }
 
@@ -249,7 +249,7 @@ if(nrow(data_D)!=nrow(data_P)){
       iter <- iter +1
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
-                     data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range)
+                     data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
@@ -282,7 +282,7 @@ if(nrow(data_D)!=nrow(data_P)){
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
                      data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range,
-                     Xk = Xk, Ak=Ak)
+                     Xk = Xk, Ak=Ak, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
@@ -317,7 +317,7 @@ if(nrow(data_D)!=nrow(data_P)){
       iter <- iter +1
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
-                     data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range)
+                     data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
@@ -353,7 +353,7 @@ if(nrow(data_D)!=nrow(data_P)){
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
                      data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range,
-                     Xk = Xk, Ak=Ak)
+                     Xk = Xk, Ak=Ak, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
@@ -397,15 +397,16 @@ if(nrow(data_D)!=nrow(data_P)){
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
                      data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range,
-                     Xk = Xk, Ak=Ak)
+                     Xk = Xk, Ak=Ak, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
       initialitem_P <- M1_P[[1]]
 
-      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par)
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par,N=N)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
+      density_par <- ld_est$par
 
       if(all(c(model_D, model_P) %in% c(1, "1PL", "Rasch", "RASCH", "PCM"))){
         initialitem_D[,1] <- initialitem_D[,1]*ld_est$s
@@ -424,7 +425,6 @@ if(nrow(data_D)!=nrow(data_P)){
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
 
   # Log-linear smoothing
@@ -435,7 +435,7 @@ if(nrow(data_D)!=nrow(data_P)){
 
       E <- Estep_Mix(item_D=initialitem_D, item_P=initialitem_P, data_D=data_D,
                      data_P=data_P, q=q, prob=0.5, d=0, sd_ratio=1, range=range,
-                     Xk = Xk, Ak=Ak)
+                     Xk = Xk, Ak=Ak, model=model_P)
       M1_D <- M1step(E, item=initialitem_D, model=model_D)
       M1_P <- Mstep_Poly(E, item=initialitem_P, model=model_P)
       initialitem_D <- M1_D[[1]]
@@ -453,6 +453,12 @@ if(nrow(data_D)!=nrow(data_P)){
         initialitem_P[,1]  <- initialitem_P[,1]*ld_est$s
         initialitem_P[,-1] <- initialitem_P[,-1]/ld_est$s
         M1_P[[2]][,-1] <- M1_P[[2]][,-1]/ld_est$s
+        if(iter>3){
+
+          density_par <- ld_est$par
+        }
+      } else {
+        density_par <- ld_est$par
       }
 
       diff <- max(c(max(abs(I_D-initialitem_D), na.rm = TRUE), max(abs(I_P-initialitem_P), na.rm = TRUE)))
@@ -462,21 +468,35 @@ if(nrow(data_D)!=nrow(data_P)){
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
 }
 
-  colnames(initialitem_D) <- c("a", "b", "c")
-  colnames(initialitem_P) <- c("a", "b_1", "b_2", "b_3", "b_4", "b_5", "b_6")
-  colnames(M1_D[[2]]) <- c("a", "b", "c")
-  colnames(M1_P[[2]]) <- c("a", "b_1", "b_2", "b_3", "b_4", "b_5", "b_6")
+  # ability parameter estimation
+  if(ability_method == 'EAP'){
+    theta <- as.numeric(E$Pk%*%E$Xk)
+    theta_se <- NULL
+  } else if(ability_method == 'MLE'){
+    mle_result <- MLE_theta(
+      item = list(initialitem_D,initialitem_P),
+      data = list(data_D,data_P),
+      type = c("mix", model_P)
+      )
+    theta <- mle_result[[1]]
+    theta_se <- mle_result[[2]]
+  }
+
+  dn_D <- list(colnames(data_D),c("a", "b", "c"))
+  dn_P <- list(colnames(data_P),c("a", paste("b", 1:(ncol(initialitem_P)-1), sep="_")))
+  dimnames(initialitem_D) <- dn_D
+  dimnames(initialitem_P) <- dn_P
+  dimnames(M1_D[[2]]) <- dn_D
+  dimnames(M1_P[[2]]) <- dn_P
 
   # preparation for outputs
-  EAP <- as.numeric(E$Pk%*%E$Xk)
   logL <- 0
   for(i in 1:q){
     logL <- logL+sum(logLikeli(item = initialitem_D, data = data_D, theta = Xk[i])+
-                       logLikeli_Poly(item = initialitem_P, data = data_P, theta = Xk[i])*E$Pk[,i])
+                       logLikeli_Poly(item = initialitem_P, data = data_P, theta = Xk[i], model=model_P)*E$Pk[,i])
   }
   E$Pk[E$Pk==0]<- .Machine$double.xmin
   Ak[Ak==0] <- .Machine$double.xmin
@@ -492,7 +512,8 @@ if(nrow(data_D)!=nrow(data_P)){
          diff=diff,
          Ak=Ak,
          Pk=E$Pk,
-         theta = EAP,
+         theta = theta,
+         theta_se = theta_se,
          logL=-2*logL, # deviance
          density_par = density_par,
          Options = Options # specified argument values

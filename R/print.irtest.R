@@ -12,27 +12,18 @@
 #'
 #' @examples
 #' \dontrun{
-#' Alldata <- DataGeneration(seed = 1,
-#'                           #model_D = rep(1, 10),
-#'                           N=1000,
-#'                           nitem_D = 0,
-#'                           nitem_P = 8,
-#'                           categ = rep(3:4,each = 4),
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
-#' data <- Alldata$data_P
-#' item <- Alldata$item_P
-#' initialitem <- Alldata$initialitem_P
-#' theta <- Alldata$theta
-#' M1 <- IRTest_Poly(initialitem = initialitem,
-#'                   data = data,
-#'                   model = "GPCM",
-#'                   latent_dist = "Mixture",
-#'                   max_iter = 200,
-#'                   threshold = .001,
-#'                   )
+#' data <- DataGeneration(seed = 1,
+#'                        #model_D = rep(1, 10),
+#'                        N=1000,
+#'                        nitem_D = 0,
+#'                        nitem_P = 8,
+#'                        categ = rep(3:4,each = 4),
+#'                        latent_dist = "2NM",
+#'                        d = 1.664,
+#'                        sd_ratio = 2,
+#'                        prob = 0.3)$data_P
+#'
+#' M1 <- IRTest_Poly(data = data, latent_dist = "KDE")
 #'
 #' M1
 #'}
@@ -115,9 +106,11 @@ print.irtest_summary <- function(x, ...){
 
 .prt.irtest.model_fit <- function(object){
   cat('Model Fit: ', '\n')
+  cat(' log-likeli  ', -object$model_fit$deviance/2,'\n')
   cat('   deviance  ', object$model_fit$deviance,'\n')
   cat('        AIC  ', object$model_fit$AIC,'\n')
   cat('        BIC  ', object$model_fit$BIC,'\n')
+  cat('         HQ  ', object$model_fit$HQ,'\n')
   cat('\n')
 }
 

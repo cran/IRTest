@@ -129,7 +129,7 @@
 #'
 DataGeneration <- function(seed=1, N=2000,
                            nitem_D=0, nitem_P=0,
-                           model_D, model_P="GPCM",
+                           model_D="2PL", model_P="GPCM",
                            latent_dist=NULL,
                            item_D=NULL, item_P=NULL,
                            theta = NULL,
@@ -137,10 +137,16 @@ DataGeneration <- function(seed=1, N=2000,
                            m = 0, s = 1,
                            a_l=0.8, a_u=2.5,
                            b_m=NULL, b_sd=NULL,
-                           c_l=0, c_u=0.2, categ){
+                           c_l=0, c_u=0.2, categ=NULL){
   initialitem_D=NULL; data_D=NULL
   initialitem_P=NULL; data_P=NULL
 
+  if(!is.null(categ)&length(categ)==1){
+    categ <- rep(categ, nitem_P)
+  }
+  if(length(model_D)==1){
+    model_D <- rep(model_D, nitem_D)
+  }
   if(is.null(b_m)){
     b_m <- m
   }
@@ -195,14 +201,14 @@ DataGeneration <- function(seed=1, N=2000,
 
 
       for(i in 1:nitem_D){
-        if(model_D[i] %in% c(2,3)){
+        if(model_D[i] %in% c(2,"2PL",3,"3PL")){
           item_D[i,1] <- round(
             runif(1,a_l,a_u),
             digits = 2
           )
           initialitem_D[i,1] <- (a_l+a_u)/2
         }
-        if(model_D[i]==3){
+        if(model_D[i] %in% c(3,"3PL")){
           item_D[i,3] <- round(
             runif(1, min = c_l, max = c_u),
             digits = 2)
@@ -221,7 +227,7 @@ DataGeneration <- function(seed=1, N=2000,
       initialitem_D <- matrix(nrow = nitem_D, ncol = 3)
 
       for(i in 1:nitem_D){
-        if(model_D[i]==1){
+        if(model_D[i] %in% c(1, "1PL", "Rasch")){
           initialitem_D[i,] <- c(1,0,0)
         } else {
           initialitem_D[i,] <- c((a_l+a_u)/2,0,0)
@@ -241,28 +247,32 @@ DataGeneration <- function(seed=1, N=2000,
 
 
   # item parameters for polytomous items
-  if(is.null(item_P)){
+  if(is.null(item_P) & !is.null(categ)){
     if((nitem_P!=0)&(!is.null(nitem_P))){
       data_P <- matrix(nrow = N, ncol = nitem_P)
-      item_P <- matrix(nrow = nitem_P, ncol = 7)
-      initialitem_P <- matrix(nrow = nitem_P, ncol = 7)
+      item_P <- matrix(nrow = nitem_P, ncol = max(categ))
+      initialitem_P <- matrix(nrow = nitem_P, ncol = max(categ))
       set.seed(seed)
       for(i in 1:nitem_P){
         center <- rnorm(1,b_m,b_sd*.5)
         if(model_P=="PCM"){
           item_P[i,1] <- 1
           item_P[i,2:(categ[i])] <- sort(rnorm(categ[i]-1,center,1))
-        } else if(model_P=="GPCM"){
+        } else if(model_P %in% c("GPCM", "GRM")){
           item_P[i,1] <- round(runif(1,a_l,a_u), digits = 2)
           item_P[i,2:(categ[i])] <- sort(rnorm(categ[i]-1,center,1))
         }
         initialitem_P[i,1] <- 1
-        initialitem_P[i,2:(categ[i])] <- 0#(-2:1+.5)/3
+        initialitem_P[i,2:(categ[i])] <- seq(-.5,.5,length.out=categ[i]-1)
 
         # item responses for polytomous items
 
         for(j in 1:N){
-          pp <- P_P(theta = theta[j], a = item_P[i,1], b = item_P[i,-1])
+          if(model_P %in% c("GPCM", "PCM")){
+            pp <- P_P(theta = theta[j], a = item_P[i,1], b = item_P[i,-1])
+          } else if(model_P %in% c("GRM")){
+            pp <- P_G(theta = theta[j], a = item_P[i,1], b = item_P[i,-1])
+          }
           pp <- pp[!is.na(pp)]
           data_P[j,i] <- sample(x = 0:(categ[i]-1),1,prob=pp)
         }

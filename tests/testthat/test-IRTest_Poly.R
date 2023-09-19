@@ -73,7 +73,7 @@ test_that("testing basic operations for IRTest_Poly", {
                       latent_dist = "LLS",
                       max_iter = 2,
                       threshold = .001,
-                      h=10)
+                      h=5)
   expect_equal(dim(Mod1$par_est), dim(item))
   expect_equal(length(Mod1$theta), length(theta))
 
@@ -114,6 +114,14 @@ test_that("testing basic operations for IRTest_Poly", {
   Mod1 <- IRTest_Poly(initialitem = initialitem,
                       data = data,
                       model = "PCM",
+                      ability_method = "MLE",
+                      latent_dist = "N",
+                      max_iter = 2,
+                      threshold = .001)
+
+  # GRM
+  Mod1 <- IRTest_Poly(data = data,
+                      model = "GRM",
                       ability_method = "MLE",
                       latent_dist = "N",
                       max_iter = 2,

@@ -22,7 +22,7 @@
 #'
 #' Bock, R.D. (1960), Methods and applications of optimal scaling. Chapel Hill, NC: L.L. Thurstone Psychometric Laboratory.
 #'
-#' Yen, W. M. (1981). Using simulation results to choose a latent trait model. Applied Psychological Measurement, 5, 245–262.
+#' Yen, W. M. (1981). Using simulation results to choose a latent trait model. \emph{Applied Psychological Measurement, 5}(2), 245–262.
 #'
 #'
 #' @export
@@ -89,8 +89,8 @@ item_fit.dich <- function(x,bins=10, bin.center='mean'){
       digits = 4
     )
   }
+  dimnames(result) <- list(item=row.names(x$par_est), c("stat", "df", "p.value"))
   result <- data.frame(result)
-  dimnames(result) <- list(item=1:nrow(result), c("stat", "df", "p.value"))
   return(result)
 }
 
@@ -127,7 +127,11 @@ item_fit.poly <- function(x,bins=10, bin.center='mean'){
 
     counts = aggregate(bin_data$theta, by = list(bin_data$bin), FUN = length)[[2]]
 
-    prob <- P_P(theta = center, a = x$par_est[i,1], b = x$par_est[i,-1])
+    if(x$Options$model %in% c("PCM", "GPCM")){
+      prob <- P_P(theta = center, a = x$par_est[i,1], b = x$par_est[i,-1])
+    } else if(x$Options$model %in% c("GRM")){
+      prob <- P_G(theta = center, a = x$par_est[i,1], b = x$par_est[i,-1])
+    }
     observed_freq <- as.matrix(
       xtabs(~bin+response,cbind(bin_data, response = x$Options$data[,i][NA_index]))
       )
@@ -138,7 +142,7 @@ item_fit.poly <- function(x,bins=10, bin.center='mean'){
     result[i,2] <- (binned[[2]]-1)*(ncol(prob)-1)-
       if(x$Options$model=="PCM"){
         ncol(prob)-1
-      }else if(x$Options$model=="GPCM"){
+      }else if(x$Options$model %in% c("GPCM", "GRM")){
         ncol(prob)
       }
     result[i,3] <- round(
@@ -148,8 +152,8 @@ item_fit.poly <- function(x,bins=10, bin.center='mean'){
       digits = 4
       )
   }
+  dimnames(result) <- list(item=row.names(x$par_est), c("stat", "df", "p.value"))
   result <- data.frame(result)
-  dimnames(result) <- list(item=1:nrow(result), c("stat", "df", "p.value"))
   return(result)
 }
 
@@ -212,8 +216,8 @@ item_fit.mix <- function(x,bins=10, bin.center='mean'){
       digits = 4
     )
   }
+  dimnames(result1) <- list(item=row.names(x$par_est[[1]]), c("stat", "df", "p.value"))
   result1 <- data.frame(result1)
-  dimnames(result1) <- list(item=1:nrow(result1), c("stat", "df", "p.value"))
 
   # polytomous
   result2 <- matrix(nrow = nrow(x$par_est[[2]]), ncol = 3)
@@ -242,7 +246,11 @@ item_fit.mix <- function(x,bins=10, bin.center='mean'){
 
     counts = aggregate(bin_data$theta, by = list(bin_data$bin), FUN = length)[[2]]
 
-    prob <- P_P(theta = center, a = x$par_est[[2]][i,1], b = x$par_est[[2]][i,-1])
+    if(x$Options$model_P %in% c("PCM", "GPCM")){
+      prob <- P_P(theta = center, a = x$par_est[[2]][i,1], b = x$par_est[[2]][i,-1])
+    } else if(x$Options$model_P %in% c("GRM")){
+      prob <- P_G(theta = center, a = x$par_est[[2]][i,1], b = x$par_est[[2]][i,-1])
+    }
     observed_freq <- as.matrix(
       xtabs(~bin+response,cbind(bin_data, response = x$Options$data_P[,i][NA_index]))
     )
@@ -253,7 +261,7 @@ item_fit.mix <- function(x,bins=10, bin.center='mean'){
     result2[i,2] <- (binned[[2]]-1)*(ncol(prob)-1)-
       if(x$Options$model_P=="PCM"){
         ncol(prob)-1
-      }else if(x$Options$model_P=="GPCM"){
+      }else if(x$Options$model_P %in% c("GPCM", "GRM")){
         ncol(prob)
       }
     result2[i,3] <- round(
@@ -263,8 +271,8 @@ item_fit.mix <- function(x,bins=10, bin.center='mean'){
       digits = 4
     )
   }
+  dimnames(result2) <- list(item=row.names(x$par_est[[2]]), c("stat", "df", "p.value"))
   result2 <- data.frame(result2)
-  dimnames(result2) <- list(item=1:nrow(result2), c("stat", "df", "p.value"))
   return(list(
     Dichotomous = result1,
     Polytomous = result2

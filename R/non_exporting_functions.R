@@ -2,7 +2,7 @@
 # citation
 #################################################################################################################
 .onAttach <- function(libname, pkgname) {
-  package_citation <- "Li, S. (2022). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 1.7.0). R package. \n"
+  package_citation <- "Li, S. (2022). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 1.11.0). R package. \n"
   package_URL <- "URL: https://CRAN.R-project.org/package=IRTest"
   packageStartupMessage("Thank you for using IRTest!")
   packageStartupMessage("Please cite the package as: \n")
@@ -18,10 +18,19 @@ P <- function(theta,a=1,b,c=0){
   c+(1-c)*(1/(1+exp(-a*(theta-b))))
 }
 
+P2 <- function(theta,b,a=1){
+  1/(1+exp(-a*(theta-b)))
+}
+
 P_P <- function(theta, a, b){
   if(length(theta)==1 & is.vector(b)){
-    ps <- c(1,exp(a*cumsum(theta-b)))
-    ps <- ps/sum(ps, na.rm = T)
+    if(length(a)==1){
+      ps <- c(1,exp(a*cumsum(theta-b)))
+      ps <- ps/sum(ps, na.rm = T)
+    } else {
+      ps <- cbind(1,exp(a*(theta-matrix(b))))
+      ps <- ps/rowSums(ps, na.rm = T)
+    }
   }else if(length(theta)==1 & is.matrix(b)){
     ps <- cbind(1,exp(t(apply(a*(theta-b),1,cumsum))))
     ps <- ps/rowSums(ps, na.rm = T)
@@ -38,6 +47,32 @@ P_P <- function(theta, a, b){
     ps <- ps/rowSums(ps)
   }
   return(ps)
+}
+
+P_G <- function(theta, a, b){
+  if(length(theta)==1 & is.vector(b)){
+    b <- b[!is.na(b)]
+    if(length(a)==1){
+      ps <- P(theta = theta, a = a, b = b)
+      ps <- c(1, ps) - c(ps, 0)
+    } else {
+      ps <- cbind(1,exp(a*(theta-matrix(b))))
+      ps <- ps/rowSums(ps, na.rm = T)
+    }
+  }else if(length(theta)==1 & is.matrix(b)){
+    ps <- P(theta = theta, a = a, b = b)
+    ps <- cbind(1, ps)-add0(cbind(ps, NA))
+  }else if(length(theta)!=1 & is.vector(b)){
+    b <- b[!is.na(b)]
+    ps <- outer(X=theta, Y=b, FUN = P2, a=a)
+    ps <- cbind(1, ps)-cbind(ps, 0)
+  }
+  return(ps)
+}
+
+add0 <- function(x){
+  x[cbind(1:nrow(x),rowSums(!is.na(x))+1)] <- 0
+  return(x)
 }
 #################################################################################################################
 # Distribution
@@ -97,8 +132,13 @@ logLikeli <- function(item, data, theta){
   return(L)
 }
 
-logLikeli_Poly <- function(item, data, theta){
-  pmat <- P_P(theta = theta, a = item[,1], b = item[,-1])
+logLikeli_Poly <- function(item, data, theta, model){
+  if(model %in% c("PCM", "GPCM")){
+    pmat <- P_P(theta = theta, a = item[,1], b = item[,-1])
+  } else if(model == "GRM"){
+    pmat <- P_G(theta = theta, a = item[,1], b = item[,-1])
+  }
+
   L <- NULL
   for(i in 1:nrow(item)){
     L <- cbind(L, pmat[i,][data[,i]+1])
@@ -149,7 +189,7 @@ Estep <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
 }
 
 Estep_Poly <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
-                       sd_ratio = 1,Xk=NULL, Ak=NULL){
+                       sd_ratio = 1,Xk=NULL, Ak=NULL, model){
   if(is.null(Xk)) {
     # quadrature points
     Xk <- seq(range[1],range[2],length=q)
@@ -161,7 +201,7 @@ Estep_Poly <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
   Pk <- matrix(nrow = nrow(data), ncol = q)
   for(i in 1:q){
     # weighted likelihood where the weight is the latent distribution
-    Pk[,i] <- exp(logLikeli_Poly(item = item, data = data, theta = Xk[i]))*Ak[i]
+    Pk[,i] <- exp(logLikeli_Poly(item = item, data = data, theta = Xk[i], model))*Ak[i]
   }
   categ <- max(data, na.rm = TRUE)+1
   Pk <- Pk/rowSums(Pk) # posterior weights
@@ -176,7 +216,7 @@ Estep_Poly <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
 }
 
 Estep_Mix <- function(item_D, item_P, data_D, data_P, range = c(-4,4), q = 100, prob = 0.5, d = 0,
-                       sd_ratio = 1,Xk=NULL, Ak=NULL){
+                       sd_ratio = 1,Xk=NULL, Ak=NULL, model){
   if(is.null(Xk)) {
     # quadrature points
     Xk <- seq(range[1],range[2],length=q)
@@ -189,7 +229,7 @@ Estep_Mix <- function(item_D, item_P, data_D, data_P, range = c(-4,4), q = 100, 
   for(i in 1:q){
     # weighted likelihood where the weight is the latent distribution
     Pk[,i] <- exp(logLikeli(item = item_D, data = data_D, theta = Xk[i])+
-                    logLikeli_Poly(item = item_P, data = data_P, theta = Xk[i]))*Ak[i]
+                    logLikeli_Poly(item = item_P, data = data_P, theta = Xk[i], model))*Ak[i]
   }
   categ <- max(data_P, na.rm = TRUE)+1
   Pk <- Pk/rowSums(Pk) # posterior weights
@@ -213,10 +253,7 @@ Estep_Mix <- function(item_D, item_P, data_D, data_P, range = c(-4,4), q = 100, 
 #################################################################################################################
 M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
   nitem <- nrow(item)
-  item_estimated <- matrix(c(rep(1,nitem),
-                             rep(0,nitem),
-                             rep(0,nitem)
-  ),nrow = nrow(item), ncol = 3)
+  item_estimated <- item
   se <- matrix(nrow = nrow(item), ncol = 3)
   X <- E$Xk
   r <- E$rik_D
@@ -240,9 +277,10 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
 
           if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
             par <- par
+            warning("Infinite or `NA` estimates produced.")
           } else{
             if( sum(abs(diff)) > div){
-              par <- par-div/sum(abs(diff))*diff/10
+              par <- par-div/sum(abs(diff))*diff/2
             } else {
               par <- par-diff
               div <- sum(abs(diff))
@@ -251,7 +289,7 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
           if( div <= threshold | iter > max_iter) break
         }
         item_estimated[i,2] <- par
-        se[i,2] <- sqrt(1/sum(fW)) # asymptotic S.E.
+        se[i,2] <- sqrt(1/sum(fW)/item[i,1]^2) # asymptotic S.E.
 
       } else if(model[i] %in% c(2, "2PL")){
 
@@ -273,9 +311,14 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
           diff <- inv_L2%*%L1
           if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
             par <- par
+            warning("Infinite or `NA` estimates produced.")
           } else{
             if( sum(abs(diff)) > div){
-              par <- par-div/sum(abs(diff))*diff/10
+              if(max(abs(diff[-1]))/abs(diff[1])>1000){
+                par <- -par
+              } else{
+                par <- par-div/sum(abs(diff))*diff/2
+              }
             } else {
               par <- par-diff
               div <- sum(abs(diff))
@@ -317,9 +360,14 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
           diff <- inv_L2%*%L1
           if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
             par <- par
+            warning("Infinite or `NA` estimates produced.")
           } else{
             if( sum(abs(diff)) > div){
-              par <- par-div/sum(abs(diff))*diff/10
+              if(max(abs(diff[-1]))/abs(diff[1])>1000){
+                par <- -par
+              } else{
+                par <- par-div/sum(abs(diff))*diff/2
+              }
             } else {
               par <- par-diff
               div <- sum(abs(diff))
@@ -339,8 +387,8 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
 
 Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter){
   nitem <- nrow(item)
-  item_estimated <- matrix(nrow = nrow(item), ncol = 7)
-  se <- matrix(nrow = nrow(item), ncol = 7)
+  item_estimated <- item
+  se <- matrix(nrow = nrow(item), ncol = ncol(item))
   X <- E$Xk
   Pk <- E$Pk
   rik <- E$rik_P
@@ -468,7 +516,7 @@ Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter
             par <- par
           } else{
             if( sum(abs(diff)) > div){
-              if(max(abs(diff[-1]))/abs(diff[1])>100){
+              if(max(abs(diff[-1]))/abs(diff[1])>1000){
                 par <- -par
               } else{
                 par <- par-div/sum(abs(diff))*diff/2
@@ -482,6 +530,81 @@ Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter
         }
         item_estimated[i,1:npar] <- par
         se[i,1:npar] <- sqrt(diag(solve(IM))) # asymptotic S.E.
+
+      } else if(model %in% c("GRM")){
+
+        iter <- 0
+        div <- 3
+        par <- item[i,]
+        par <- par[!is.na(par)]
+        npar <- length(par)
+        f <- rowSums(rik[i,,])
+        ####Newton-Raphson####
+        repeat{
+          iter <- iter+1
+          pmat <- P_G(theta = X, a=par[1], b=par[-1])
+          p_ <- outer(X = X, Y = par[-1], FUN = P2, a=par[1])
+          X_ <- cbind(0, outer(X = X, Y = par[-1], FUN="-"), 0)
+          ws <- cbind(0, p_*(1-p_), 0)
+          # Gradients
+          Grad <- numeric(npar)
+
+          # Information Matrix
+          IM <- matrix(0, ncol = npar, nrow = npar)
+
+          IM[1,1] <- -f%*%((X_[,1]*ws[,1]-X_[,2]*ws[,2])^2/pmat[,1])
+          Grad[1] <- sum(rik[i,,1]*(X_[,1]*ws[,1]-X_[,2]*ws[,2])/pmat[,1])
+
+          for(k in 2:npar){
+            Grad[1] <- Grad[1] + sum(
+              rik[i,,k]*(X_[,k]*ws[,k]-X_[,k+1]*ws[,k+1])/pmat[,k]
+              )
+            IM[1,1] <- IM[1,1]-f%*%((X_[,k]*ws[,k]-X_[,k+1]*ws[,k+1])^2/pmat[,k])
+
+            Grad[k] <- sum(
+              par[1]*ws[,k]*(rik[i,,k-1]/pmat[,k-1] -rik[i,,k]/pmat[,k])
+            )
+            IM[1,k] <- -par[1]*f%*%(
+              ws[,k]*(
+                (X_[,k-1]*ws[,k-1]-X_[,k]*ws[,k])/pmat[,k-1]-
+                  (X_[,k]*ws[,k]-X_[,k+1]*ws[,k+1])/pmat[,k]
+                )
+              )
+            IM[k,k] <- -par[1]^2*f%*%(ws[,k]^2*(1/pmat[,k-1]+1/pmat[,k]))
+            if(k<npar){
+              IM[k,k+1] <- par[1]^2*f%*%(ws[,k]*ws[,k+1]/pmat[,k])
+            }
+          }
+
+
+          for(r in 1:npar){
+            for(co in 1:npar){
+              if(r < co){
+                IM[co,r] <- IM[r,co]
+              }
+            }
+          }
+
+          diff <- solve(IM)%*%Grad
+
+          if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+            par <- par
+          } else{
+            if( sum(abs(diff)) > div){
+              if(max(abs(diff[-1]))/abs(diff[1])>1000){
+                par <- -par
+              } else{
+                par <- par-div/sum(abs(diff))*diff/2
+              }
+            } else {
+              par <- par-diff
+              div <- sum(abs(diff))
+            }
+          }
+          if( div <= threshold | iter > max_iter) break
+        }
+        item_estimated[i,1:npar] <- par
+        se[i,1:npar] <- sqrt(-diag(solve(IM))) # asymptotic S.E.
 
       } else warning("model is incorrect or unspecified.")
     }
@@ -551,12 +674,13 @@ M2step <- function(E, max_iter=200){
 # Ability parameter MLE
 #################################################################################################################
 MLE_theta <- function(item, data, type){
+  message("\n",appendLF=FALSE)
   mle <- NULL
   se <- NULL
-  nitem <- nrow(item)
-  if(type=="dich"){
+  if(all(type=="dich")){
     for(i in 1:nrow(data)){
-      if(sum(data[i,],na.rm = TRUE)==nitem){
+      message("\r","\r","MLE for ability parameter estimation, ", i,"/",nrow(data),sep="",appendLF=FALSE)
+      if(sum(data[i,],na.rm = TRUE)==sum(!is.na(data[i,]))){
         mle <- append(mle, Inf)
         se <- append(se, NA)
       } else if(sum(data[i,],na.rm = TRUE)==0){
@@ -583,10 +707,11 @@ MLE_theta <- function(item, data, type){
         se <- append(se, sqrt(-1/L2))
       }
     }
-  } else if(type=='poly'){
+  } else if(all(type %in% c("PCM", "GPCM", "GRM"))){
+    ncat <- rowSums(!is.na(item))-1
     for(i in 1:nrow(data)){
-      ncat <- rowSums(!is.na(item))-1
-      if(sum(data[i,],na.rm = TRUE)==sum(ncat)){
+      message("\r","\r","MLE for ability parameter estimation, ", i,"/",nrow(data),sep="",appendLF=FALSE)
+      if(sum(data[i,],na.rm = TRUE)==sum(ncat[!is.na(data[i,])])){
         mle <- append(mle, Inf)
         se <- append(se, NA)
       } else if(sum(data[i,],na.rm = TRUE)==0){
@@ -596,27 +721,88 @@ MLE_theta <- function(item, data, type){
         th <- 0
         thres <- 1
         while(thres > 0.0001){
-          p <- P_P(theta = th, a = item[,1], b = item[,-1])
-          p[is.na(p)] <- 0
-          S <- p[,-1]%*%1:6
-          L1 <- sum(
-            item[,1]*(data[i,]-S),
-            na.rm = TRUE
-          )
-          L2 <- -sum(
-            item[,1]^2*(p[,-1]%*%(1:6)^2 - S^2)
-          )
-          diff <- L1/L2
+          l1l2 <- L1L2_Poly(th, item, data, type, ncat,i )
+          diff <- l1l2[1]/l1l2[2]
           th <- th - diff
           thres <- abs(diff)
         }
         mle <- append(mle, th)
-        se <- append(se, sqrt(-1/L2))
+        se <- append(se, sqrt(-1/l1l2[2]))
+      }
+    }
+  } else if(any(type %in% c("mix"))){
+    ncat <- rowSums(!is.na(item[[2]]))-1
+    for(i in 1:nrow(data[[1]])){
+      message("\r","\r","MLE for ability parameter estimation, ", i,"/",nrow(data[[1]]),sep="",appendLF=FALSE)
+      if(
+        sum(c(data[[1]][i,],data[[2]][i,]),na.rm = TRUE)==sum(c(!is.na(data[[1]][i,]),ncat[!is.na(data[[2]][i,])]))
+        ){
+        mle <- append(mle, Inf)
+        se <- append(se, NA)
+      } else if(sum(c(data[[1]][i,],data[[2]][i,]),na.rm = TRUE)==0){
+        mle <- append(mle, -Inf)
+        se <- append(se, NA)
+      } else {
+        th <- 0
+        thres <- 1
+        while(thres > 0.0001){
+          # dichotomous items
+          p_ <- P(theta = th, a = item[[1]][,1], b = item[[1]][,2], c = item[[1]][,3])
+          p <- p_*(1-item[[1]][,3])+item[[1]][,3]
+          L1 <- sum(
+            item[[1]][,1]*p_/p*(data[[1]][i,]-p),
+            na.rm = TRUE
+          )
+          L2 <- -sum(
+            item[[1]][,1]^2*p_^2*(1-p)/p
+          )
+
+          # polytomous items
+          l1l2 <- L1L2_Poly(th=th, item=item[[2]], data=data[[2]], type=type[2], ncat=ncat,i=i)
+
+          # add them
+          diff <- (L1+l1l2[1])/(L2+l1l2[2])
+          th <- th - diff
+          thres <- abs(diff)
+        }
+        mle <- append(mle, th)
+        se <- append(se, sqrt(-1/l1l2[2]))
       }
     }
   }
   return(list(mle=mle,
               se=se))
+}
+
+L1L2_Poly <- function(th, item, data, type, ncat, i){
+  if(type %in% c("PCM", "GPCM")){
+    p <- P_P(theta = th, a = item[,1], b = item[,-1])
+    p[is.na(p)] <- 0
+    S <- p[,-1]%*%1:max(ncat)
+    L1 <- sum(
+      item[,1]*(data[i,]-S),
+      na.rm = TRUE
+    )
+    L2 <- -sum(
+      (item[,1]^2*(p[,-1]%*%(1:max(ncat))^2 - S^2))[!is.na(data[i,])],
+      na.rm = TRUE
+    )
+  } else if(type=='GRM'){
+    pmat <- P_G(th, item[,1], item[,-1])
+    p_ <- P(th, item[,1], item[,-1])
+    ws <- add0(cbind(0, p_*(1-p_), NA))
+    q_p <- add0(cbind(0, 1-2*p_, NA))
+    L1 <- sum(
+      (item[,1]*(ws[,-ncol(ws)]-ws[,-1])/pmat)[cbind(1:length(ncat),data[i,]+1)],
+      na.rm = TRUE
+    )
+    L2 <- sum(
+      rowSums(item[,1]^2*((ws*q_p)[,-ncol(ws)]-(ws*q_p)[,-1]-(ws[,-ncol(ws)]-ws[,-1])^2/pmat),
+              na.rm = TRUE)[!is.na(data[i,])],
+      na.rm = TRUE
+    )
+  }
+  return(c(L1, L2))
 }
 
 #################################################################################################################
@@ -663,25 +849,32 @@ latent_dist_est <- function(method, Xk, posterior, range,
     par <- c(SJPI$bw, SJPI$n)
   }
   if(method %in% c('DC', 'Davidian')){
+    post_den <- posterior/sum(posterior)
+    post_den <- lin_inex(Xk, post_den, range = range)
     par <- nlminb(start = par,
                   objective = DC.LL,
                   gradient = DC.grad,
                   theta= Xk,
-                  freq = posterior)$par
+                  freq = post_den$qh*N
+                  )$par
 
-    post_den <- dcurver::ddc(x = Xk, phi = par)
-    post_den <- post_den/sum(post_den)
-    lin <- lin_inex(Xk, post_den, range = range, rule = 2)
+    post_den2 <- dcurver::ddc(x = Xk, phi = par)
+    post_den2 <- post_den2/sum(post_den2)
+    lin <- lin_inex(Xk, post_den2, range = range, rule = 2)
+    lin$s <- post_den$s
   }
   if(method=='LLS'){
+    post_den <- posterior/sum(posterior)
+    post_den <- lin_inex(Xk, post_den, range = range)
     LLS <- lls(Xk=Xk,
-               posterior=posterior,
+               posterior=post_den$qh*N,
                bb=par,
                N=N
                )
-    post_den <- LLS$freq/N
+    post_den2 <- LLS$freq/N
     par <- LLS$beta
-    lin <- lin_inex(Xk, post_den, range = range, rule = 2)
+    lin <- lin_inex(Xk, post_den2, range = range, rule = 2)
+    lin$s <- post_den$s
   }
 
   return(
@@ -827,5 +1020,5 @@ DC.LL <- function (phi, theta, freq) {
 #' @importFrom dcurver dc_grad
 #'
 DC.grad <- function (phi, theta, freq) {
-  -colSums(dcurver::dc_grad(theta, phi) * freq)
+  -freq%*%dcurver::dc_grad(theta, phi)
 }

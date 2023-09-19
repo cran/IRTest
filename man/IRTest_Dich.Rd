@@ -132,40 +132,30 @@ where \eqn{N} is the number of examinees, \eqn{\theta_j} is \eqn{j}th examinee's
 The Gaussian kernel is used in this function.
 
 5) Log-linear smoothing method
-\deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+\deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 }
 }
 }
 \examples{
+\dontrun{
 # A preparation of dichotomous item response data
 
-Alldata <- DataGeneration(seed = 1,
-                          model_D = rep(1, 10),
-                          N=500,
-                          nitem_D = 10,
-                          nitem_P = 0,
-                          latent_dist = "2NM",
-                          d = 1.664,
-                          sd_ratio = 2,
-                          prob = 0.3)
+data <- DataGeneration(seed = 1,
+                       model_D = rep(1, 10),
+                       N=500,
+                       nitem_D = 10,
+                       nitem_P = 0,
+                       latent_dist = "2NM",
+                       d = 1.664,
+                       sd_ratio = 2,
+                       prob = 0.3)$data_D
 
-data <- Alldata$data_D
-item <- Alldata$item_D
-initialitem <- Alldata$initialitem_D
-theta <- Alldata$theta
 
 # Analysis
 
-M1 <- IRTest_Dich(data = data,
-                  model = rep(1,10),
-                  latent_dist = "KDE",
-                  bandwidth = "SJ-ste", # an argument required only when "latent_dist = 'KDE'"
-                  max_iter = 200,
-                  threshold = .001,
-                  h=4 # an argument required only when "latent_dist = 'DC'"
-                  )
-
+M1 <- IRTest_Dich(data)
+}
 }
 \references{
 Bock, R. D., & Aitkin, M. (1981). Marginal maximum likelihood estimation of item parameters: Application of an EM algorithm. \emph{Psychometrika, 46}(4), 443-459.

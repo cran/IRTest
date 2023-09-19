@@ -12,7 +12,7 @@
 #' @param data A matrix of item responses where responses are coded as \code{0, 1, ..., m} for an \code{m+1} category item.
 #' Rows and columns indicate examinees and items, respectively.
 #' @param model A character value that represents the type of a item characteristic function applied to the items.
-#' Currently, \code{PCM} and \code{GPCM} are available. The default is \code{"GPCM"}.
+#' Currently, \code{PCM}, \code{GPCM}, and \code{GRM} are available. The default is \code{"GPCM"}.
 #' @param range Range of the latent variable to be considered in the quadrature scheme.
 #' The default is from \code{-6} to \code{6}: \code{c(-6, 6)}.
 #' @param q A numeric value that represents the number of quadrature points. The default value is 121.
@@ -81,7 +81,7 @@
 #' The Gaussian kernel is used in this function.
 #'
 #' 5) Log-linear smoothing method
-#' \deqn{P(\theta=X_{q})=\exp{\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}}}
+#' \deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 #' where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
 #'
 #' }
@@ -97,8 +97,7 @@
 #' \item{Ak}{The estimated discrete latent distribution.
 #' It is discrete (i.e., probability mass function) since quadrature scheme of EM-MML is used.}
 #' \item{Pk}{The posterior probabilities for each examinees at each quadrature points.}
-#' \item{theta}{The estimated ability parameter values.
-#' Expected \emph{a posteriori} (EAP) is used for ability parameter estimation.}
+#' \item{theta}{The estimated ability parameter values.}
 #' \item{theta_se}{The asymptotic standard errors of ability parameter estimates. Available only when \code{ability_method = "MLE"}.
 #' If an examinee answers all or none of the items correctly, the function returns \code{NA}.}
 #' \item{logL}{The deviance (i.e., -2\emph{log}L).}
@@ -137,51 +136,41 @@
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' # A preparation of dichotomous item response data
 #'
-#' Alldata <- DataGeneration(seed = 1,
-#'                           model_P = "GPCM",
-#'                           categ = rep(3:4, each = 4),
-#'                           N=1000,
-#'                           nitem_D = 0,
-#'                           nitem_P = 8,
-#'                           latent_dist = "2NM",
-#'                           d = 1.414,
-#'                           sd_ratio = 2,
-#'                           prob = 0.5)
-#'
-#' data <- Alldata$data_P
-#' item <- Alldata$item_P
-#' initialitem <- Alldata$initialitem_P
-#' theta <- Alldata$theta
-#'
+#' data <- DataGeneration(seed = 1,
+#'                        model_P = "GPCM",
+#'                        categ = rep(3:4, each = 4),
+#'                        N=1000,
+#'                        nitem_D = 0,
+#'                        nitem_P = 8,
+#'                        latent_dist = "2NM",
+#'                        d = 1.414,
+#'                        sd_ratio = 2,
+#'                        prob = 0.5)$data_P
 #'
 #' # Analysis
 #'
-#' M1 <- IRTest_Poly(initialitem = initialitem,
-#'                   data = data,
-#'                   model = "GPCM",
-#'                   latent_dist = "KDE",
-#'                   bandwidth = "SJ-ste", # an argument required only when "latent_dist = 'KDE'"
-#'                   max_iter = 200,
-#'                   threshold = .001,
-#'                   h=4 # an argument required only when "latent_dist = 'DC'"
-#'                   )
-#'
+#' M1 <- IRTest_Poly(data)
+#'}
 IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialitem=NULL,
                         ability_method = 'EAP', latent_dist="Normal",
                         max_iter=200, threshold=0.0001,bandwidth="SJ-ste",h=NULL){
 
-  categories <- apply(data, MARGIN = 2, FUN = extract_cat)
+  categories <- apply(data, MARGIN = 2, FUN = extract_cat, simplify = FALSE)
 
   data <- reorder_mat(as.matrix(data))
   if(is.null(initialitem)){
     category <- apply(data, 2, max, na.rm = TRUE)
-    initialitem <- matrix(nrow = ncol(data), ncol = 7)
+    initialitem <- matrix(nrow = ncol(data), ncol = max(category)+1)
     initialitem[,1] <- 1
-    initialitem[,2] <- 0
-    for(i in 3:7){
-      initialitem[category>(i-2),i] <- 0
+    for(i in 1:nrow(initialitem)){
+      if(model!="GRM"){
+        initialitem[i, 2:(category[i]+1)] <- 0
+      } else {
+        initialitem[i, 2:(category[i]+1)] <- seq(-.01,.01,length.out=category[i])
+      }
     }
   }
 
@@ -206,7 +195,7 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1, range=range)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1, range=range, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
@@ -230,7 +219,7 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1, range=range, Xk=Xk, Ak=Ak)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
@@ -257,12 +246,11 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=prob, d=d, sd_ratio=sd_ratio, range = range)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=prob, d=d, sd_ratio=sd_ratio, range = range, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
       M2 <- M2step(E)
       prob = M2$prob; d = M2$d; sd_ratio = M2$sd_ratio
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
 
       if(model == "PCM"){
         initialitem[,1] <- initialitem[,1]*M2$s
@@ -270,6 +258,8 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
         M1[[2]][,-1] <- M1[[2]][,-1]/M2$s
       }
 
+      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      I <- initialitem
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
@@ -282,8 +272,7 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1,
-                      range=range, Xk=Xk, Ak=Ak)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
@@ -318,13 +307,14 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model = model)
       initialitem <- M1[[1]]
 
-      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par)
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par, N=N)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
+      density_par <- ld_est$par
 
       if(model == "PCM"){
         initialitem[,1] <- initialitem[,1]*ld_est$s
@@ -338,7 +328,6 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
   # Log-linear smoothing
   if(latent_dist=="LLS"){
@@ -346,8 +335,7 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1,
-                      range=range, Xk=Xk, Ak=Ak)
+      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
       M1 <- Mstep_Poly(E, item=initialitem, model=model)
       initialitem <- M1[[1]]
 
@@ -359,6 +347,11 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
         initialitem[,1] <- initialitem[,1]*ld_est$s
         initialitem[,-1] <- initialitem[,-1]/ld_est$s
         M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
+        if(iter>3){
+          density_par <- ld_est$par
+        }
+      } else {
+        density_par <- ld_est$par
       }
 
       diff <- max(abs(I-initialitem), na.rm = TRUE)
@@ -375,18 +368,18 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     theta <- as.numeric(E$Pk%*%E$Xk)
     theta_se <- NULL
   } else if(ability_method == 'MLE'){
-    mle_result <- MLE_theta(item = initialitem, data = data, type = "poly")
+    mle_result <- MLE_theta(item = initialitem, data = data, type = model)
     theta <- mle_result[[1]]
     theta_se <- mle_result[[2]]
   }
-
-  colnames(initialitem) <- c("a", "b_1", "b_2", "b_3", "b_4", "b_5", "b_6")
-  colnames(M1[[2]]) <- c("a", "b_1", "b_2", "b_3", "b_4", "b_5", "b_6")
+  dn <- list(colnames(data),c("a", paste("b", 1:(ncol(initialitem)-1), sep="_")))
+  dimnames(initialitem) <- dn
+  dimnames(M1[[2]]) <- dn
 
   # preparation for outputs
   logL <- 0
   for(i in 1:q){
-    logL <- logL+sum(logLikeli_Poly(initialitem, data, theta = Xk[i])*E$Pk[,i])
+    logL <- logL+sum(logLikeli_Poly(initialitem, data, theta = Xk[i], model=model)*E$Pk[,i])
   }
   E$Pk[E$Pk==0]<- .Machine$double.xmin
   Ak[Ak==0] <- .Machine$double.xmin

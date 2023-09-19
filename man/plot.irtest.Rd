@@ -7,7 +7,7 @@
 \method{plot}{irtest}(x, ...)
 }
 \arguments{
-\item{x}{An \code{class == "irtest"} object obtained from either \code{\link{IRTest_Dich}}, \code{\link{IRTest_Poly}}, or \code{\link{IRTest_Mix}}.}
+\item{x}{A \code{class == "irtest"} object obtained from either \code{\link{IRTest_Dich}}, \code{\link{IRTest_Poly}}, or \code{\link{IRTest_Mix}}.}
 
 \item{...}{Other argument(s) passed on to draw a plot of an estimated latent distribution.
 Arguments are passed on to \code{\link{stat_function}}, if the distribution estimation method is the one using two-component normal mixture distribution (i.e., \code{latent_dist == "Mixture"} or \code{"2NM"})
@@ -24,29 +24,18 @@ This function draws a plot of the estimated latent distribution (the population 
 \dontrun{
 # Data generation and model fitting
 
-Alldata <- DataGeneration(seed = 1,
-                          #model_D = rep(1, 10),
-                          N=1000,
-                          nitem_D = 0,
-                          nitem_P = 8,
-                          categ = rep(3:4,each = 4),
-                          latent_dist = "2NM",
-                          d = 1.664,
-                          sd_ratio = 2,
-                          prob = 0.3)
+data <- DataGeneration(seed = 1,
+                       #model_D = rep(1, 10),
+                       N=1000,
+                       nitem_D = 0,
+                       nitem_P = 8,
+                       categ = rep(3:4,each = 4),
+                       latent_dist = "2NM",
+                       d = 1.664,
+                       sd_ratio = 2,
+                       prob = 0.3)$data_P
 
-data <- Alldata$data_P
-item <- Alldata$item_P
-initialitem <- Alldata$initialitem_P
-theta <- Alldata$theta
-
-M1 <- IRTest_Poly(initialitem = initialitem,
-                  data = data,
-                  model = "GPCM",
-                  latent_dist = "Mixture",
-                  max_iter = 200,
-                  threshold = .001,
-                  )
+M1 <- IRTest_Poly(data = data, latent_dist = "KDE")
 
 
 # Plotting the latent distribution

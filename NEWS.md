@@ -1,3 +1,43 @@
+# IRTest 1.11.0
+
+* Graded response model (`"GRM"`) is now available.
+* Developed `MLE` for mixed-format analysis.
+
+# IRTest 1.10.0
+
+* Outputs reflect item names in an input file.
+* Enhanced algorithm convergence for `IRTest_Dich` when there exist one or more negative slope parameters.
+* Error in calculating MLE in the presence of missing data is resolved.
+* `summary` returns the HQ criterion.
+* Error in `DataGeneration`'s `model_D` argument is fixed.
+* `plot` function employs `latent_distribution`.
+
+# IRTest 1.9.1
+
+* Minor errors have been corrected such as the calculation of $\rho_{\theta\theta^{'}}$ with discrete latent distribution and the calculation of $sd$ in the Davidian-cure method.
+* Vignette file has been updated.
+
+# IRTest 1.9.0
+
+* `latent_distribution` has been developed. This function evaluates an estimated latent density function.
+* `reliability` calculates a coefficient on the $\theta$ scale.
+
+# IRTest 1.8.1
+
+* Convergence of the estimation algorithm was enhanced for `"PCM"` by inserting latest item parameters instead of inserting starting values repeatedly.
+
+# IRTest 1.8.0
+
+* `inform_f_item` and `inform_f_test` are developed.
+* Convergence for `"DC"` and `"LLS"` was enhanced by updating density parameters every iteration.
+
+# IRTest 1.7.1
+
+* Minor errors in the manual file are corrected.
+* `reliability` uses the raw value in a given data for calculating the reliability coefficient.
+* `reliability` returns both test reliability coefficient and item reliability coefficients.
+* Every estimation function returns the raw score-categories of items.
+
 # IRTest 1.7.0
 
 * Log-linear smoothing method (`latent_dist = "LLS"`) can be applied to estimate a latent distribution.
