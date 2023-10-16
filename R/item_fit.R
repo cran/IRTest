@@ -1,13 +1,13 @@
 #' Item fit diagnostics
 #'
-#' @description This function analyses and reports item-fit test results.
+#' @description This function analyzes and reports item-fit test results.
 #'
 #'
 #' @param x A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, or \code{IRTest_Mix}.
 #' @param bins The number of bins to be used for calculating the statistics.
-#' Following Yen's \eqn{Q_{1}} (1981) , the default is 10.
+#' Following Yen's \eqn{Q_{1}} (1981), the default is 10.
 #' @param bin.center A method for calculating the center of each bin.
-#' Following Yen's \eqn{Q_{1}} (1981) , the default is \code{"mean"}.
+#' Following Yen's \eqn{Q_{1}} (1981), the default is \code{"mean"}.
 #' Use \code{"median"} for Bock's \eqn{\chi^{2}} (1960).
 #'
 #' @return This function returns a \code{matrix} of item-fit test results.
@@ -26,7 +26,21 @@
 #'
 #'
 #' @export
+#' @examples
+#' \donttest{
+#' # A preparation of dichotomous item response data
 #'
+#' data <- DataGeneration(N=500,
+#'                        nitem_D = 10)$data_D
+#'
+#' # Analysis
+#'
+#' M1 <- IRTest_Dich(data)
+#'
+#' # Item fit statistics
+#'
+#' item_fit(M1)
+#'}
 item_fit <- function(x, bins=10, bin.center='mean'){
   UseMethod("item_fit",x)
 }

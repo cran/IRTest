@@ -7,13 +7,36 @@
 recategorize(data, new_cat)
 }
 \arguments{
-\item{data}{An item response matrix}
+\item{data}{An item response matrix.}
 
-\item{new_cat}{A list of a new categorization scheme}
+\item{new_cat}{A list of a new categorization scheme.}
 }
 \value{
 Recategorized data
 }
 \description{
 With a recategorization scheme as an input, this function implements recategorization for the input data.
+}
+\examples{
+\donttest{
+# Preparation of dichotomous item response data
+
+data <- DataGeneration(N=1000,
+                       nitem_P = 8)$data_P
+
+# Analysis
+
+M1 <- IRTest_Poly(data)
+
+# Recommendation of category collapsing
+
+new_cat <- cat_clps(M1$par_est)
+
+# Recategorization of data
+
+recategorize(data, new_cat)
+}
+}
+\author{
+Seewoo Li \email{cu@yonsei.ac.kr}
 }

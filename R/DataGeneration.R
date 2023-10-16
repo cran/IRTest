@@ -1,36 +1,34 @@
-#' Generating artificial item response data
+#' Generating an artificial item response dataset
 #'
-#' @description This function generates artificial item response data with users specified item types, details of item parameters, and latent distribution.
+#' @description This function generates an artificial item response dataset allowing various options.
 #'
 #' @importFrom betafunctions rBeta.4P
 #' @importFrom stats dnorm rbinom rchisq rnorm runif
 #'
-#' @param seed A numeric value that is used on random sampling.
-#' The seed number can guarantee the replicability of the result.
-#' @param N A numeric value. The number of examinees.
-#' @param nitem_D A numeric value. The number of dichotomous items.
-#' @param nitem_P A numeric value. The number of polytomous items.
-#' @param model_D A vector of length \code{nitem_D}.
-#' The \emph{i}th element is the probability model for the \emph{i}th dichotomous item.
+#' @param seed A numeric value that is used for random sampling.
+#' Seed number can guarantee a replicability of the result.
+#' @param N A numeric value of the number of examinees.
+#' @param nitem_D A numeric value of the number of dichotomous items.
+#' @param nitem_P A numeric value of the number of polytomous items.
+#' @param model_D A vector or a character string that represents the probability model for the dichotomous items.
 #' @param model_P A character string that represents the probability model for the polytomous items.
 #' @param latent_dist A character string that determines the type of latent distribution.
 #' Currently available options are \code{"beta"} (four-parameter beta distribution; \code{\link{rBeta.4P}}),
 #' \code{"chi"} (\eqn{\chi^2} distribution; \code{\link{rchisq}}),
 #' \code{"normal"}, \code{"Normal"}, or \code{"N"} (standard normal distribution; \code{\link{rnorm}}),
 #' and \code{"Mixture"} or \code{"2NM"} (two-component Gaussian mixture distribution; see Li (2021) for details.)
-#' @param item_D Default is \code{NULL}. An item parameter matrix can be specified. The number of columns should be 3: \code{a} parameter for the first, \code{b} parameter for the second, and \code{c} parameter for the third column.
-#' @param item_P Default is \code{NULL}. An item parameter matrix can be specified. The number of columns should be 7: \code{a} parameter for the first, and \code{b} parameters for the rest of the columns.
-#' @param theta Default is NULL. An ability parameter vector can be specified.
-#' @param prob A numeric value required when \code{latent_dist = "Mixture"}.
-#' It is a \eqn{\pi = \frac{n_1}{N}} parameter of two-component Gaussian mixture distribution, where \eqn{n_1} is the estimated number of examinees who belong to the first Gaussian component and \eqn{N} is the total number of examinees (Li, 2021).
-#' @param d A numeric value required when \code{latent_dist = "Mixture"}.
-#' It is a \eqn{\delta = \frac{\mu_2 - \mu_1}{\bar{\sigma}}} parameter of two-component Gaussian mixture distribution,
-#' where \eqn{\mu_1} is the estimated mean of the first Gaussian component,
-#' \eqn{\mu_2} is the estimated mean of the second Gaussian component,
-#' and \eqn{\bar{\sigma} = 1} is the standard deviation of the latent distribution (Li, 2021).
-#' Without loss of generality, \eqn{\mu_2 \ge \mu_1}, thus \eqn{\delta \ge 0}, is assumed.
-#' @param sd_ratio A numeric value required when \code{latent_dist = "Mixture"}.
-#' It is a \eqn{\zeta = \frac{\sigma_2}{\sigma_1}} parameter of two-component Gaussian mixture distribution, where \eqn{\sigma_1} is the estimated standard deviation of the first Gaussian component, \eqn{\sigma_2} is the estimated standard deviation of the second Gaussian component (Li, 2021).
+#' @param item_D An item parameter matrix for using fixed parameter values. The number of columns should be 3: \code{a} parameter for the first, \code{b} parameter for the second, and \code{c} parameter for the third column. Default is \code{NULL}.
+#' @param item_P An item parameter matrix for using fixed parameter values. The number of columns should be 7: \code{a} parameter for the first, and \code{b} parameters for the rest of the columns. Default is \code{NULL}.
+#' @param theta An ability parameter vector for using fixed parameter values. Default is \code{NULL}.
+#' @param prob A numeric value for using \code{latent_dist = "2NM"}.
+#' It is the \eqn{\pi = \frac{n_1}{N}} parameter of two-component Gaussian mixture distribution, where \eqn{n_1} is the estimated number of examinees belonging to the first Gaussian component and \eqn{N} is the total number of examinees (Li, 2021).
+#' @param d A numeric value for using \code{latent_dist = "2NM"}.
+#' It is the \eqn{\delta = \frac{\mu_2 - \mu_1}{\bar{\sigma}}} parameter of two-component Gaussian mixture distribution,
+#' where \eqn{\mu_1} and \eqn{\mu_2} are the estimated means of the first and second Gaussian components, respectively.
+#' And \eqn{\bar{\sigma}} is the overall standard deviation of the latent distribution (Li, 2021).
+#' Without loss of generality, \eqn{\mu_2 \ge \mu_1} is assumed, thus \eqn{\delta \ge 0}.
+#' @param sd_ratio A numeric value for using \code{latent_dist = "2NM"}.
+#' It is the \eqn{\zeta = \frac{\sigma_2}{\sigma_1}} parameter of two-component Gaussian mixture distribution, where \eqn{\sigma_1} and \eqn{\sigma_2} are the estimated standard deviations of the first and second Gaussian components, respectively (Li, 2021).
 #' @param m A numeric value of the overall mean of the latent distribution. The default is 0.
 #' @param s A numeric value of the overall standard deviation of the latent distribution. The default is 1.
 #' @param a_l A numeric value. The lower bound of item discrimination parameters (\emph{a}).
@@ -41,10 +39,10 @@
 #' If unspecified, \code{s} is passed on to the value.
 #' @param c_l A numeric value. The lower bound of item guessing parameters (\emph{c}).
 #' @param c_u A numeric value. The lower bound of item guessing parameters (\emph{c}).
-#' @param categ A numeric vector of length \code{nitem_P}.
-#' The \emph{i}th element equals the number of categories of the \emph{i}th polyotomous item.
+#' @param categ A scalar or a numeric vector of length \code{nitem_P}. The default is 5.
+#' If \code{length(categ)>1}, the \emph{i}th element equals the number of categories of the \emph{i}th polyotomous item.
 #'
-#' @return This function returns a \code{list} which contains several objects:
+#' @return This function returns a \code{list} of several objects:
 #' \item{theta}{A vector of ability parameters (\eqn{\theta}).}
 #' \item{item_D}{A matrix of dichotomous item parameters.}
 #' \item{initialitem_D}{A matrix that contains initial item parameter values for dichotomous items.}
@@ -63,81 +61,44 @@
 #'
 #'
 #' @examples
-#' # Dichotomous item responses only
+#' # Dichotomous item responses
 #'
-#' Alldata <- DataGeneration(seed = 1,
-#'                           model_D = rep(3, 10),
-#'                           N=500,
-#'                           nitem_D = 10,
-#'                           nitem_P = 0,
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
-#'
-#' data <- Alldata$data_D
-#' item <- Alldata$item_D
-#' initialitem <- Alldata$initialitem_D
-#' theta <- Alldata$theta
+#' Alldata <- DataGeneration(N=500,
+#'                           nitem_D = 10)
 #'
 #'
-#' # Polytomous item responses only
+#' # Polytomous item responses
 #'
-#' Alldata <- DataGeneration(seed = 2,
-#'                           N=1000,
-#'                           item_D=NULL,
-#'                           item_P=NULL,
-#'                           theta = NULL,
-#'                           nitem_D = 0,
-#'                           nitem_P = 10,
-#'                           categ = rep(3:7,each = 2),
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
-#'
-#' data <- Alldata$data_P
-#' item <- Alldata$item_P
-#' initialitem <- Alldata$initialitem_P
-#' theta <- Alldata$theta
+#' Alldata <- DataGeneration(N=1000,
+#'                           nitem_P = 10)
 #'
 #'
 #' # Mixed-format items
 #'
-#' Alldata <- DataGeneration(seed = 2,
-#'                           model_D = rep(1:2, each=10),# 1PL model is applied to item #1~10
-#'                                                       # and 2PL model is applied to item #11~20.
-#'                           N=1000,
+#' Alldata <- DataGeneration(N=1000,
 #'                           nitem_D = 20,
+#'                           nitem_P = 10)
+#'
+#' # Dataset from non-normal latent density using two-component Gaussian mixture distribution
+#'
+#' Alldata <- DataGeneration(N=1000,
 #'                           nitem_P = 10,
-#'                           categ = rep(3:7,each = 2),# 3 categories for item #21-22,
-#'                                                     # 4 categories for item #23-24,
-#'                                                     # ...,
-#'                                                     # and 7 categories for item #29-30.
 #'                           latent_dist = "2NM",
 #'                           d = 1.664,
 #'                           sd_ratio = 2,
 #'                           prob = 0.3)
 #'
-#' DataD <- Alldata$data_D
-#' DataP <- Alldata$data_P
-#' itemD <- Alldata$item_D
-#' itemP <- Alldata$item_P
-#' initialitemD <- Alldata$initialitem_D
-#' initialitemP <- Alldata$initialitem_P
-#' theta <- Alldata$theta
-#'
 DataGeneration <- function(seed=1, N=2000,
                            nitem_D=0, nitem_P=0,
                            model_D="2PL", model_P="GPCM",
-                           latent_dist=NULL,
+                           latent_dist="Normal",
                            item_D=NULL, item_P=NULL,
                            theta = NULL,
                            prob=0.5, d=1.7, sd_ratio=1,
                            m = 0, s = 1,
                            a_l=0.8, a_u=2.5,
                            b_m=NULL, b_sd=NULL,
-                           c_l=0, c_u=0.2, categ=NULL){
+                           c_l=0, c_u=0.2, categ=5){
   initialitem_D=NULL; data_D=NULL
   initialitem_P=NULL; data_P=NULL
 

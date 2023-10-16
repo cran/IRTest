@@ -10,11 +10,9 @@ library(ggplot2)
 library(gridExtra)
 
 ## -----------------------------------------------------------------------------
-Alldata <- DataGeneration(seed = 123456789,
-                          model_D = rep(2, each=15),
+Alldata <- DataGeneration(model_D = 2,
                           N=1000,
                           nitem_D = 15,
-                          nitem_P = 0,
                           latent_dist = "2NM",
                           d = 1.664,
                           sd_ratio = 2,
@@ -22,8 +20,6 @@ Alldata <- DataGeneration(seed = 123456789,
 
 data <- Alldata$data_D
 theta <- Alldata$theta
-data[1:500, 1] <- NA
-data[501:1000, 2] <- NA
 colnames(data) <- paste0("item", 1:15)
 
 ## ---- results='hide', message=FALSE-------------------------------------------
@@ -32,39 +28,37 @@ Mod1 <- IRTest_Dich(data = data,
                     latent_dist = "LLS",
                     h=4)
 
-## ---- fig.align='center', fig.height=6, fig.width=6---------------------------
+## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
 ### Summary
 summary(Mod1)
 
-### The estimated item parameters
-Mod1$par_est
+### Log-likelihood
+logLik(Mod1)
 
-### The asymptotic standard errors of item parameters
-Mod1$se
+### The estimated item parameters
+coef(Mod1)
+
+### Standard errors of the item parameter estimates
+coef_se(Mod1)
 
 ### The estimated ability parameters
-plot(theta, Mod1$theta)
+fscore <- factor_score(Mod1, ability_method = "MLE")
+plot(theta, fscore$theta)
 abline(b=1, a=0)
+
+### Standard errors of ability parameter estimates
+plot(fscore$theta, fscore$theta_se)
 
 ## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
-  lims(
-    y = c(0, .75)
-  )+
+  lims(y = c(0, .75))+
   geom_line(
     mapping=aes(
       x=seq(-6,6,length=121), 
-      y=dist2(
-        seq(-6,6,length=121),
-        prob = .3, 
-        d=1.664, 
-        sd_ratio = 2
-        ), 
+      y=dist2(seq(-6,6,length=121), prob = .3, d = 1.664, sd_ratio = 2), 
       colour="True"),
     linewidth = 1)+
-  labs(
-    title="The estimated latent density using '2NM'", colour= "Type"
-    )+
+  labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
 ## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
@@ -134,11 +128,9 @@ ggplot()+
   theme_bw()
 
 ## -----------------------------------------------------------------------------
-Alldata <- DataGeneration(seed = 123456789,
-                          model_P = "GRM",
+Alldata <- DataGeneration(model_P = "GRM",
                           categ = rep(c(3,7), each = 7),
                           N=1000,
-                          nitem_D = 0,
                           nitem_P = 14,
                           latent_dist = "2NM",
                           d = 1.664,
@@ -147,8 +139,6 @@ Alldata <- DataGeneration(seed = 123456789,
 
 data <- Alldata$data_P
 theta <- Alldata$theta
-data[1:500, 1:3] <- NA
-data[501:1000, 4:6] <- NA
 colnames(data) <- paste0("item", 1:14)
 
 ## ---- results='hide', message=FALSE-------------------------------------------
@@ -156,39 +146,36 @@ Mod1 <- IRTest_Poly(data = data,
                     model = "GRM",
                     latent_dist = "KDE")
 
-## ---- fig.align='center', fig.height=6, fig.width=6---------------------------
+## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
 ### Summary
 summary(Mod1)
 
-### The estimated item parameters
-Mod1$par_est
+### Log-likelihood
+logLik(Mod1)
 
-### The asymptotic standard errors of item parameters
-Mod1$se
+### The estimated item parameters
+coef(Mod1)
+
+### Standard errors of the item parameter estimates
+coef_se(Mod1)
 
 ### The estimated ability parameters
-plot(theta, Mod1$theta)
+fscore <- factor_score(Mod1, ability_method = "MLE")
+plot(theta, fscore$theta)
 abline(b=1, a=0)
+
+### Standard errors of ability parameter estimates
+plot(fscore$theta, fscore$theta_se)
 
 ## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
-  lims(
-    y = c(0, .75)
-  )+
-  geom_line(
-    mapping=aes(
-      x=seq(-6,6,length=121), 
-      y=dist2(
-        seq(-6,6,length=121),
-        prob = .3, 
-        d=1.664, 
-        sd_ratio = 2
-        ), 
-      colour="True"),
-    linewidth = 1)+
-  labs(
-    title="The estimated latent density using '2NM'", colour= "Type"
-    )+
+  stat_function(
+    fun = dist2,
+    args = list(prob = .3, d = 1.664, sd_ratio = 2),
+    mapping = aes(colour = "True"),
+    linewidth = 1) +
+  lims(y = c(0, .75)) + 
+  labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
 ## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
@@ -263,10 +250,8 @@ ggplot()+
   theme_bw()
 
 ## -----------------------------------------------------------------------------
-Alldata <- DataGeneration(seed = 123456789,
-                          model_D = rep(2,10),
+Alldata <- DataGeneration(model_D = 2,
                           model_P = "GRM",
-                          categ = rep(5,5),
                           N=1000,
                           nitem_D = 10,
                           nitem_P = 5,
@@ -278,11 +263,6 @@ Alldata <- DataGeneration(seed = 123456789,
 DataD <- Alldata$data_D
 DataP <- Alldata$data_P
 theta <- Alldata$theta
-
-DataD[1:250, 1] <- NA
-DataD[251:500, 2] <- NA
-DataP[501:750, 1] <- NA
-DataP[751:1000, 2] <- NA
 colnames(DataD) <- paste0("item", 1:10)
 colnames(DataP) <- paste0("item", 1:5)
 
@@ -293,39 +273,36 @@ Mod1 <- IRTest_Mix(data_D = DataD,
                    model_P = "GRM",
                    latent_dist = "KDE")
 
-## ---- fig.align='center', fig.height=6, fig.width=6---------------------------
+## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
 ### Summary
 summary(Mod1)
 
-### The estimated item parameters
-Mod1$par_est
+### Log-likelihood
+logLik(Mod1)
 
-### The asymptotic standard errors of item parameters
-Mod1$se
+### The estimated item parameters
+coef(Mod1)
+
+### Standard errors of the item parameter estimates
+coef_se(Mod1)
 
 ### The estimated ability parameters
-plot(theta, Mod1$theta)
+fscore <- factor_score(Mod1, ability_method = "MLE")
+plot(theta, fscore$theta)
 abline(b=1, a=0)
+
+### Standard errors of ability parameter estimates
+plot(fscore$theta, fscore$theta_se)
 
 ## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
-  lims(
-    y = c(0, .75)
-  )+
-  geom_line(
-    mapping=aes(
-      x=seq(-6,6,length=121), 
-      y=dist2(
-        seq(-6,6,length=121),
-        prob = .3, 
-        d=1.664, 
-        sd_ratio = 2
-        ), 
-      colour="True"),
-    linewidth = 1)+
-  labs(
-    title="The estimated latent density using '2NM'", colour= "Type"
-    )+
+  stat_function(
+    fun = dist2,
+    args = list(prob = .5, d = 1.664, sd_ratio = 1),
+    mapping = aes(colour = "True"),
+    linewidth = 1) +
+  lims(y = c(0, .75)) + 
+  labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
 ## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
@@ -405,4 +382,35 @@ ggplot()+
   lims(x=c(-6,6))+
   labs(title="Test information function", x=expression(theta), y='information')+
   theme_bw()
+
+## -----------------------------------------------------------------------------
+data <- DataGeneration(N=2000,
+                       nitem_D = 20,
+                       latent_dist = "2NM",
+                       d = 1.664,
+                       sd_ratio = 2,
+                       prob = 0.3)$data_D
+
+## ---- results='hide', message=FALSE-------------------------------------------
+Normal <- IRTest_Dich(data)
+EHM <- IRTest_Dich(data, latent_dist = "EHM")
+NM2 <- IRTest_Dich(data, latent_dist = "2NM")
+KDM <- IRTest_Dich(data, latent_dist = "KDE")
+DC1 <- IRTest_Dich(data, latent_dist = "DC", h = 1)
+DC2 <- IRTest_Dich(data, latent_dist = "DC", h = 2)
+DC3 <- IRTest_Dich(data, latent_dist = "DC", h = 3)
+DC4 <- IRTest_Dich(data, latent_dist = "DC", h = 4)
+DC5 <- IRTest_Dich(data, latent_dist = "DC", h = 5)
+DC6 <- IRTest_Dich(data, latent_dist = "DC", h = 6)
+DC7 <- IRTest_Dich(data, latent_dist = "DC", h = 7)
+DC8 <- IRTest_Dich(data, latent_dist = "DC", h = 8)
+DC9 <- IRTest_Dich(data, latent_dist = "DC", h = 9)
+DC10<- IRTest_Dich(data, latent_dist = "DC", h = 10)
+
+## -----------------------------------------------------------------------------
+anova(DC1,DC2,DC3,DC4,DC5,DC6,DC7,DC8,DC9,DC10)
+best_model(DC1,DC2,DC3,DC4,DC5,DC6,DC7,DC8,DC9,DC10)
+
+## -----------------------------------------------------------------------------
+best_model(Normal, EHM, NM2, KDM, DC6, criterion = "HQ")
 

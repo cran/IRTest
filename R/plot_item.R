@@ -1,21 +1,34 @@
-#' Plot of item response function
+#' Plot of item response functions
 #'
-#' @description This function draws a item response function of an item of the fitted model.
+#' @description This function draws item response functions of an item of the fitted model.
 #'
 #'
 #' @param x A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, or \code{IRTest_Mix}.
 #' @param item.number A numeric value indicating the item number.
-#' @param type Type of an item being either \code{"d"} (dichotomous item) or \code{"p"} (polytomous item); \code{item.number=1, type="d"} indicates the first dichotomous item.
-#' This value will be used only when a model fit of mixed-format data is passed onto the function.
+#' @param type A character string required if \code{inherits(x, c("mix")) == TRUE}.
+#' It should be either \code{"d"} (dichotomous item) or \code{"p"} (polytomous item); \code{item.number=1, type="d"} indicates the first dichotomous item.
 #'
-#' @return This function returns a plot of item response function.
+#' @return This function returns a plot of item response functions.
 #'
 #'
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 #' @export
+#' @examples
+#' \donttest{
+#' # A preparation of dichotomous item response data
 #'
-plot_item <- function(x, item.number, type=NULL){
+#' data <- DataGeneration(N=500, nitem_D = 10)$data_D
+#'
+#' # Analysis
+#'
+#' M1 <- IRTest_Dich(data)
+#'
+#' # Plotting item response function
+#'
+#' plot_item(M1, item.number = 1)
+#'}
+plot_item <- function(x, item.number=1, type=NULL){
   UseMethod("plot_item", x)
 }
 
@@ -29,7 +42,7 @@ plot_item <- function(x, item.number, type=NULL){
 #' @importFrom ggplot2 labs
 #' @importFrom ggplot2 theme_bw
 #'
-plot_item.dich <- function(x, item.number, type=NULL){
+plot_item.dich <- function(x, item.number=1, type=NULL){
   item_par <- x$par_est[item.number,]
   probs <- P(theta = seq(-6,6,0.1),
              a = item_par[1],
@@ -64,7 +77,7 @@ plot_item.dich <- function(x, item.number, type=NULL){
 #' @importFrom ggplot2 labs
 #' @importFrom ggplot2 theme_bw
 #'
-plot_item.poly <- function(x, item.number, type=NULL){
+plot_item.poly <- function(x, item.number=1, type=NULL){
   item_par <- x$par_est[item.number,]
   npar <- sum(!is.na(item_par))
   if(x$Option$model %in% c("PCM", "GPCM")){
@@ -94,7 +107,7 @@ plot_item.poly <- function(x, item.number, type=NULL){
 #' @importFrom ggplot2 labs
 #' @importFrom ggplot2 theme_bw
 #'
-plot_item.mix <- function(x, item.number, type=NULL){
+plot_item.mix <- function(x, item.number=1, type="d"){
   if(type=="d"){
     item_par <- x$par_est[[1]][item.number,]
     probs <- P(theta = seq(-6,6,0.1),

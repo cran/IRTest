@@ -1,3 +1,13 @@
+# IRTest 1.12.0
+
+* Developed functions for medel comparison and model selection.
+* Modified `GHc` as an implicit object.
+* Provided examples for functions.
+* Changed from `any(class())` to `inherits()`.
+* Provided more S3 methods.
+* Updated the manual.
+* Added `coef_se` that returns S.E. of item parameter estimates.
+
 # IRTest 1.11.0
 
 * Graded response model (`"GRM"`) is now available.

@@ -10,20 +10,36 @@ item_fit(x, bins = 10, bin.center = "mean")
 \item{x}{A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, or \code{IRTest_Mix}.}
 
 \item{bins}{The number of bins to be used for calculating the statistics.
-Following Yen's \eqn{Q_{1}} (1981) , the default is 10.}
+Following Yen's \eqn{Q_{1}} (1981), the default is 10.}
 
 \item{bin.center}{A method for calculating the center of each bin.
-Following Yen's \eqn{Q_{1}} (1981) , the default is \code{"mean"}.
+Following Yen's \eqn{Q_{1}} (1981), the default is \code{"mean"}.
 Use \code{"median"} for Bock's \eqn{\chi^{2}} (1960).}
 }
 \value{
 This function returns a \code{matrix} of item-fit test results.
 }
 \description{
-This function analyses and reports item-fit test results.
+This function analyzes and reports item-fit test results.
 }
 \details{
 Bock's \eqn{\chi^{2}} (1960) or Yen's \eqn{Q_{1}} (1981) is currently available.
+}
+\examples{
+\donttest{
+# A preparation of dichotomous item response data
+
+data <- DataGeneration(N=500,
+                       nitem_D = 10)$data_D
+
+# Analysis
+
+M1 <- IRTest_Dich(data)
+
+# Item fit statistics
+
+item_fit(M1)
+}
 }
 \references{
 Bock, R.D. (1960), Methods and applications of optimal scaling. Chapel Hill, NC: L.L. Thurstone Psychometric Laboratory.

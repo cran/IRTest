@@ -2,23 +2,23 @@
 % Please edit documentation in R/category_collapsing.R
 \name{cat_clps}
 \alias{cat_clps}
-\title{A recommendation for the category collapsing of items based on item parameters}
+\title{A recommendation for category collapsing of items based on item parameters}
 \usage{
 cat_clps(item.matrix, range = c(-4, 4), increment = 0.005)
 }
 \arguments{
 \item{item.matrix}{A matrix of item parameters.}
 
-\item{range}{A range of \eqn{\theta} to be evaluated.}
+\item{range}{A range of \eqn{\theta} to be evaluated. The default is \code{c(-4, 4)}.}
 
-\item{increment}{A width of the grid scheme.}
+\item{increment}{A width of the grid scheme. The default is \code{0.005}.}
 }
 \value{
 A list of recommended recategorization for each item.
 }
 \description{
 In a polytomous item, one or more score categories may not have the highest probability among the categories in an acceptable \eqn{\theta} range.
-In this case, the category could be regarded as a redundant one in a psychometric point of view and can be collapsed into another score category.
+In this case, the category may possibly be regarded as redundant in a psychometric point of view and can be collapsed into another score category.
 This function returns a recommendation for a recategorization scheme based on item parameters.
 }
 \author{

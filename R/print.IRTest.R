@@ -1,9 +1,9 @@
-#' Print of the result
+#' Printing the result
 #'
 #' @description This function prints the summarized information.
 #'
-#' @param x An object returned from \code{\link{summary.irtest}}.
-#' @param ... Additional arguments (currently nonfunctioning).
+#' @param x An object of \code{"IRTest"}-class obtained from either \code{\link{IRTest_Dich}}, \code{\link{IRTest_Poly}}, or \code{\link{IRTest_Mix}}.
+#' @param ... Additional arguments (currently non-functioning).
 #'
 #' @return Printed texts on the console recommending the usage of \code{summary} function and the direct access to the details using "$" sign.
 #' @export
@@ -11,24 +11,14 @@
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 #' @examples
-#' \dontrun{
-#' data <- DataGeneration(seed = 1,
-#'                        #model_D = rep(1, 10),
-#'                        N=1000,
-#'                        nitem_D = 0,
-#'                        nitem_P = 8,
-#'                        categ = rep(3:4,each = 4),
-#'                        latent_dist = "2NM",
-#'                        d = 1.664,
-#'                        sd_ratio = 2,
-#'                        prob = 0.3)$data_P
+#' \donttest{
+#' data <- DataGeneration(N=1000, nitem_P = 8)$data_P
 #'
 #' M1 <- IRTest_Poly(data = data, latent_dist = "KDE")
 #'
 #' M1
 #'}
-#'
-print.irtest <- function(x, ...){
+print.IRTest <- function(x, ...){
   cat('Convergence: ', '\n')
   if(x$diff<=x$Options$threshold){
     cat("Successfully converged.",'\n')
@@ -46,49 +36,33 @@ print.irtest <- function(x, ...){
   cat('Use \n')
   cat('1) `$` sign for the direct access to the elements \n')
   cat('and/or \n')
-  cat('2) `summary` function for the briefly summarized output. \n')
+  cat('2) `summary` for a briefly summarized output. \n')
+  cat('and/or \n')
+  cat('3) `coef`, `coef_se`, `factor_score`, and etc. for more flexible usages. \n')
   invisible(x)
 }
 
-#' Print of the summary
+#' Printing the summary
 #'
 #' @description This function prints the summarized information.
 #'
-#' @param x An object returned from \code{\link{summary.irtest}}.
-#' @param ... Additional arguments (currently nonfunctioning).
-#' @return Printed summarized texts on the console.
+#' @param x An object returned from \code{\link{summary.IRTest}}.
+#' @param ... Additional arguments (currently non-functioning).
+#' @return Summarized texts on the console.
 #' @export
 #'
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 #' @examples
-#' \dontrun{
-#' Alldata <- DataGeneration(seed = 1,
-#'                           #model_D = rep(1, 10),
-#'                           N=1000,
-#'                           nitem_D = 0,
-#'                           nitem_P = 8,
-#'                           categ = rep(3:4,each = 4),
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
-#' data <- Alldata$data_P
-#' item <- Alldata$item_P
-#' initialitem <- Alldata$initialitem_P
-#' theta <- Alldata$theta
-#' M1 <- IRTest_Poly(initialitem = initialitem,
-#'                   data = data,
-#'                   model = "GPCM",
-#'                   latent_dist = "Mixture",
-#'                   max_iter = 200,
-#'                   threshold = .001,
-#'                   )
+#' \donttest{
+#' data <- DataGeneration(N=1000, nitem_P = 8)$data_P
+#'
+#' M1 <- IRTest_Poly(data = data,
+#'                   latent_dist = "2NM")
 #'
 #' summary(M1)
 #'}
-#'
-print.irtest_summary <- function(x, ...){
+print.IRTest_summary <- function(x, ...){
   .prt.irtest.convergence(x)
   .prt.irtest.model_fit(x)
   .prt.irtest.n_par(x)
@@ -106,7 +80,7 @@ print.irtest_summary <- function(x, ...){
 
 .prt.irtest.model_fit <- function(object){
   cat('Model Fit: ', '\n')
-  cat(' log-likeli  ', -object$model_fit$deviance/2,'\n')
+  cat(' log-likeli  ', object$model_fit$ll,'\n')
   cat('   deviance  ', object$model_fit$deviance,'\n')
   cat('        AIC  ', object$model_fit$AIC,'\n')
   cat('        BIC  ', object$model_fit$BIC,'\n')

@@ -59,6 +59,12 @@ Followings are the functions of **IRTest**.
 - `IRTest_Mix` is the estimation function for *a mixed-format test*, a
   test comprising both dichotomous item(s) and polytomous item(s).
 
+- `factor_score` estimates factor scores of examinees.
+
+- `coef_se` returns standard errors of item parameter estimates.
+
+- `best_model` selects the best model using an evaluation criterion.
+
 - `item_fit` tests the statistical fit of all items individually.
 
 - `inform_f_item` calculates the information value(s) of an item.
@@ -87,6 +93,9 @@ Followings are the functions of **IRTest**.
   (or, equivalently, item response functions).
 
 - `recategorize` implements the category collapsing.
+
+- For S3 methods, `anova`, `coef`, `logLik`, `plot`, `print`, and
+  `summary` are available.
 
 ## Example
 
@@ -185,7 +194,7 @@ knitr::kables(
   kableExtra::kable_styling(font_size = 4),
 
     ### Estimated item parameters
-    knitr::kable(Mod1$par_est, format='simple', caption = "Estimated item parameters", digits = 2)%>%
+    knitr::kable(coef(Mod1), format='simple', caption = "Estimated item parameters", digits = 2)%>%
   kableExtra::kable_styling(font_size = 4)
   )
 )
@@ -238,12 +247,14 @@ Estimated item parameters
 
 
 ### Plotting
+fscores <- factor_score(Mod1, ability_method = "MLE")
+
 par(mfrow=c(1,3))
 plot(item[,1], Mod1$par_est[,1], xlab = "true", ylab = "estimated", main = "item discrimination parameters")
 abline(a=0,b=1)
 plot(item[,2], Mod1$par_est[,2], xlab = "true", ylab = "estimated", main = "item difficulty parameters")
 abline(a=0,b=1)
-plot(theta, Mod1$theta, xlab = "true", ylab = "estimated", main = "ability parameters")
+plot(theta, fscores$theta, xlab = "true", ylab = "estimated", main = "ability parameters")
 abline(a=0,b=1)
 ```
 
@@ -253,23 +264,13 @@ abline(a=0,b=1)
 
 ``` r
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
-  lims(
-    y = c(0, .75)
-  )+
-  geom_line(
-    mapping=aes(
-      x=seq(-6,6,length=121), 
-      y=dist2(
-        seq(-6,6,length=121),
-        prob = .3, 
-        d=1.664, 
-        sd_ratio = 2
-        ), 
-      colour="True"),
-    linewidth = 1)+
-  labs(
-    title="The estimated latent density using '2NM'", colour= "Type"
-    )+
+  stat_function(
+    fun = dist2,
+    args = list(prob = .3, d = 1.664, sd_ratio = 2),
+    mapping = aes(colour = "True"),
+    linewidth = 1) +
+  lims(y = c(0, .75)) + 
+  labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 ```
 
@@ -277,9 +278,8 @@ plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
 
 - Posterior distributions for the examinees
 
-Each examinee’s posterior distribution is identified in the E-step of
-the estimation algorithm (i.e., EM algorithm). Posterior distributions
-can be found in `Mod1$Pk`.
+Each examinee’s posterior distribution is calculated in the E-step of EM
+algorithm. Posterior distributions can be found in `Mod1$Pk`.
 
 ``` r
 set.seed(1)

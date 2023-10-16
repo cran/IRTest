@@ -2,7 +2,7 @@
 #'
 #' @param x A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, or \code{IRTest_Mix}.
 #'
-#' @return Estimated marginal reliability coefficient.
+#' @return Estimated marginal reliability coefficients.
 #'
 #' @importFrom stats integrate
 #'
@@ -10,13 +10,15 @@
 #' \describe{
 #' \item{Reliability coefficient on summed-score scale}{
 #' In accordance with the concept of \emph{reliability} in classical test theory (CTT),
-#' this function calculates the IRT reliability coefficient.
+#' this function calculates the IRT reliability coefficients.
 #'
-#' The basic concept and formula of the reliability coefficient can be expressed as follows (Kim, Feldt, 2010):
+#' The basic concept and formula of the reliability coefficient can be expressed as follows (Kim & Feldt, 2010):
 #'
 #' An observed score of Item \eqn{i}, \eqn{X_i}, is decomposed as the sum of a true score \eqn{T_i} and an error \eqn{e_i}.
 #' Then, with the assumption of \eqn{\sigma_{T_{i}e_{j}}=\sigma_{e_{i}e_{j}}=0}, the reliability coefficient of a test is defined as;
 #' \deqn{\rho_{TX}=\rho_{XX^{'}}=\frac{\sigma_{T}^{2}}{\sigma_{X}^{2}}=\frac{\sigma_{T}^{2}}{\sigma_{T}^{2}+\sigma_{e}^{2}}=1-\frac{\sigma_{e}^{2}}{\sigma_{X}^{2}}}
+#'
+#' See May and Nicewander (1994) for the specific formula used in this function.
 #' }
 #'
 #' \item{Reliability coefficient on \eqn{\theta} scale}{
@@ -35,25 +37,19 @@
 #'
 #' @references
 #' Green, B.F., Bock, R.D., Humphreys, L.G., Linn, R.L., & Reckase, M.D. (1984). Technical guidelines for assessing computerized adaptive tests. \emph{Journal of Educational Measurement, 21}(4), 347–360.
+#'
 #' Kim, S. (2012). A note on the reliability coefficients for item response model-based ability estimates. \emph{Psychometrika, 77}(1), 153-162.
+#'
 #' Kim, S., Feldt, L.S. (2010). The estimation of the IRT reliability coefficient and its lower and upper bounds, with comparisons to CTT reliability statistics. \emph{Asia Pacific Education Review, 11}, 179–188.
 #'
+#' May, K., Nicewander, A.W. (1994). Reliability and information functions for percentile ranks. \emph{Journal of Educational Measurement, 31}(4), 313-325.
 #'
 #'
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' Alldata <- DataGeneration(seed = 1,
-#'                           model_D = rep(1, 10),
-#'                           N=500,
-#'                           nitem_D = 10,
-#'                           latent_dist = "2NM",
-#'                           d = 1.664,
-#'                           sd_ratio = 2,
-#'                           prob = 0.3)
-#'
-#' data <- Alldata$data_D
+#' \donttest{
+#' data <- DataGeneration(N=500, nitem_D = 10)$data_D
 #'
 #' # Analysis
 #'
@@ -61,15 +57,7 @@
 #'
 #'
 #' # Reliability coefficients
-#' rel <- reliability(M1)
-#'
-#' ## On the summed-score scale
-#' rel$summed.score.scale$test
-#' rel$summed.score.scale$item
-#'
-#' ## On the summed-score scale
-#' rel$theta.scale
-#'
+#' reliability(M1)
 #'}
 reliability <- function(x){
 
@@ -78,20 +66,20 @@ reliability <- function(x){
   Xk <- x$quad
   param <- x$par_est
 
-  if(any(class(x)%in%c("dich", "poly"))){
+  if(inherits(x, c("dich", "poly"))){
     n_item <- nrow(param)
     true_score_matrix <- matrix(nrow = length(Xk), ncol = n_item)
     squared <- matrix(nrow = length(Xk), ncol = n_item)
 
     cats <- x$Options$categories
 
-    if(any(class(x)=="dich")){
+    if(inherits(x, c("dich"))){
       for(i in 1:n_item){
         ppp <- P(Xk, a = param[i,1], b = param[i,2], c = param[i,3])
         true_score_matrix[,i] <- cbind(1-ppp,ppp)%*%cats[[i]]
         squared[,i] <- cbind(1-ppp,ppp)%*%cats[[i]]^2
       }
-    } else if(any(class(x)=="poly")){
+    } else if(inherits(x, c("poly"))){
       for(i in 1:n_item){
         if(x$Options$model %in% c("PCM", "GPCM")){
           ppp <- P_P(Xk, a = param[i,1], b = param[i,-1])
@@ -102,7 +90,7 @@ reliability <- function(x){
         squared[,i] <- ppp%*%cats[[i]]^2
       }
     }
-  } else if(any(class(x)=="mix")){
+  } else if(inherits(x, c("mix"))){
     n_item_D <- nrow(param$Dichotomous)
     n_item_P <- nrow(param$Polytomous)
 
@@ -142,7 +130,7 @@ reliability <- function(x){
     mu_T <- Ak%*%true_score_matrix
     sigma2_T <- Ak%*%true_score_matrix^2-mu_T^2
     rxx2 <- as.vector(sigma2_T/(sigma2_T+sigma2_e))
-    if(any(class(x)=="mix")){
+    if(inherits(x, c("mix"))){
       names(rxx2) <- c(paste(row.names(param$Dichotomous),"D", sep = "_"),
                        paste(row.names(param$Polytomous),"P", sep = "_"))
     } else {
