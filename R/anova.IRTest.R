@@ -1,15 +1,14 @@
 #' Model comparison
 #'
-#' @param object An object of \code{"IRTest"}-class.
-#' @param ... Additional objects of \code{"IRTest"}-class to be compared.
+#' @param ... Objects of \code{"IRTest"}-class to be compared.
 #'
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 #' @return Model-fit indices and results of likelihood ratio test (LRT).
 #' @export
 #'
-anova.IRTest <- function(object, ...){
-  obs <- list(object, ...)
+anova.IRTest <- function(...){
+  obs <- list(...)
   if(length(obs) < 2){
     stop("More than two models from a same data should be provided.")
   }
@@ -21,7 +20,12 @@ anova.IRTest <- function(object, ...){
   n_pars <- NULL
   chi <- NULL
   p_value <- NULL
-  model_names <- unlist(lapply(substitute(list(object, ...)), deparse)[-1])
+  if(is.null(names(match.call()))){
+    model_names <- unlist(lapply(substitute(list(...)), deparse)[-1])
+  } else {
+    model_names <- names(match.call())
+  }
+
 
   for(i in 1:length(obs)){
     sumobs <- summary(obs[[i]])
@@ -47,7 +51,7 @@ anova.IRTest <- function(object, ...){
         n_pars = n_pars,
         chi = chi,
         p_value = p_value,
-        row.names = model_names
+        row.names = if(length(obs)==length(model_names)) model_names else model_names[-1]
       ),
       class = c('anova_IRTest', 'data.frame')
     )

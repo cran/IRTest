@@ -4,20 +4,25 @@
 \alias{factor_score}
 \title{Estimated factor scores}
 \usage{
-factor_score(x, ability_method = "EAP")
+factor_score(x, ability_method = "EAP", quad = NULL, prior = NULL)
 }
 \arguments{
-\item{x}{A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, or \code{IRTest_Mix}.}
+\item{x}{A model fit object from either \code{IRTest_Dich}, \code{IRTest_Poly}, \code{IRTest_Cont}, or \code{IRTest_Mix}.}
 
 \item{ability_method}{The ability parameter estimation method.
 The available options are Expected \emph{a posteriori} (\code{EAP}) and Maximum Likelihood Estimates (\code{MLE}).
 The default is \code{EAP}.}
+
+\item{quad}{A vector of quadrature points for \code{EAP} calculation.}
+
+\item{prior}{A vector of the prior distribution for \code{EAP} calculation. The length of it should be the same as \code{quad}.}
 }
 \value{
 \item{theta}{The estimated ability parameter values. If \code{ability_method = "MLE"}.
 If an examinee receives a maximum or minimum score for all items, the function returns \eqn{\pm}\code{Inf}.}
-\item{theta_se}{The asymptotic standard errors of ability parameter estimates. Available only when \code{ability_method = "MLE"}.
-If an examinee receives a maximum or minimum score for all items, the function returns \code{NA}.}
+\item{theta_se}{The standard errors of ability parameter estimates.
+It returns standard deviations of posteriors for \code{EAP}s and asymptotic standard errors (i.e., square root of inverse Fisher information) for \code{MLE}.
+If an examinee receives a maximum or minimum score for all items, the function returns \code{NA} for \code{MLE}.}
 }
 \description{
 Factor scores of examinees.

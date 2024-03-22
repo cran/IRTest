@@ -12,13 +12,17 @@
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
 #'
 inform_f_item<- function(x, test, item = 1, type = "d"){
-  if(any(class(test) == "dich")){
+  if(inherits(test, "dich")){
     param <- test$par_est[item,]
     probs <- P(x, param[1], param[2], param[3])
     probs_ <- first_deriv_dich(x, param)
     inform <- probs_^2/(probs*(1-probs))
-  } else if(any(class(test) == "poly")){
+  } else if(inherits(test, "cont")){
     param <- test$par_est[item,]
+    inform <- L2_Cont(theta = x, a = param[1], b = param[2], nu = param[3])
+  } else if(inherits(test, "poly")){
+    param <- test$par_est[item,]
+    param <- param[!is.na(param)]
     if(test$Options$model %in% c("PCM", "GPCM")){
       probs <- P_P(x, param[1], param[-1])
       probs_ <- first_deriv_gpcm(x, param)
@@ -26,8 +30,13 @@ inform_f_item<- function(x, test, item = 1, type = "d"){
       probs <- P_G(x, param[1], param[-1])
       probs_ <- first_deriv_grm(x, param)
     }
-    inform <- rowSums((probs_^2)/probs)
-  } else if(any(class(test) == "mix")){
+    if(is.null(nrow(probs))){
+      inform <- sum((probs_^2)/probs)
+    } else {
+      inform <- rowSums((probs_^2)/probs)
+    }
+
+  } else if(inherits(test, "mix")){
     if(type == "d"){
       param <- test$par_est[[1]][item,]
       probs <- P(x, param[1], param[2], param[3])
@@ -35,6 +44,7 @@ inform_f_item<- function(x, test, item = 1, type = "d"){
       inform <- probs_^2/(probs*(1-probs))
     } else if(type == "p"){
       param <- test$par_est[[2]][item,]
+      param <- param[!is.na(param)]
       if(test$Options$model_P %in% c("PCM", "GPCM")){
         probs <- P_P(x, param[1], param[-1])
         probs_ <- first_deriv_gpcm(x, param)
@@ -42,7 +52,11 @@ inform_f_item<- function(x, test, item = 1, type = "d"){
         probs <- P_G(x, param[1], param[-1])
         probs_ <- first_deriv_grm(x, param)
       }
-      inform <- rowSums((probs_^2)/probs)
+      if(is.null(nrow(probs))){
+        inform <- sum((probs_^2)/probs)
+      } else {
+        inform <- rowSums((probs_^2)/probs)
+      }
     }
   }
   return(inform)
@@ -60,11 +74,11 @@ inform_f_item<- function(x, test, item = 1, type = "d"){
 #'
 inform_f_test <- function(x, test){
   inform <- 0
-  if(any(class(test) %in% c("dich", "poly"))){
+  if(inherits(test, c("dich", "poly", "cont"))){
     for(i in 1:nrow(test$par_est)){
       inform <- inform + inform_f_item(x, test, i)
     }
-  } else if(any(class(test) %in% c("mix"))){
+  } else if(inherits(test, "mix")){
     for(j in 1:2){
       for(i in 1:nrow(test$par_est[[j]])){
         inform <- inform + inform_f_item(x, test, i, c("d", "p")[j])
@@ -83,6 +97,7 @@ first_deriv_grm <- function(x, param){
 }
 
 first_deriv_gpcm <- function(x, param){
+  param <- param[!is.na(param)]
   cats <- ((1:sum(!is.na(param)))-1)
   probs <- P_P(x, param[1], param[-1])
   ws <- as.vector(probs%*%cats)

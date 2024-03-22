@@ -9,11 +9,13 @@ DataGeneration(
   N = 2000,
   nitem_D = 0,
   nitem_P = 0,
+  nitem_C = 0,
   model_D = "2PL",
   model_P = "GPCM",
   latent_dist = "Normal",
   item_D = NULL,
   item_P = NULL,
+  item_C = NULL,
   theta = NULL,
   prob = 0.5,
   d = 1.7,
@@ -26,7 +28,8 @@ DataGeneration(
   b_sd = NULL,
   c_l = 0,
   c_u = 0.2,
-  categ = 5
+  categ = 5,
+  possible_ans = seq(0.1, 0.9, length = 5)
 )
 }
 \arguments{
@@ -38,6 +41,8 @@ Seed number can guarantee a replicability of the result.}
 \item{nitem_D}{A numeric value of the number of dichotomous items.}
 
 \item{nitem_P}{A numeric value of the number of polytomous items.}
+
+\item{nitem_C}{A numeric value of the number of continuous response items.}
 
 \item{model_D}{A vector or a character string that represents the probability model for the dichotomous items.}
 
@@ -52,6 +57,8 @@ and \code{"Mixture"} or \code{"2NM"} (two-component Gaussian mixture distributio
 \item{item_D}{An item parameter matrix for using fixed parameter values. The number of columns should be 3: \code{a} parameter for the first, \code{b} parameter for the second, and \code{c} parameter for the third column. Default is \code{NULL}.}
 
 \item{item_P}{An item parameter matrix for using fixed parameter values. The number of columns should be 7: \code{a} parameter for the first, and \code{b} parameters for the rest of the columns. Default is \code{NULL}.}
+
+\item{item_C}{An item parameter matrix for using fixed parameter values. The number of columns should be 3: \code{a} parameter for the first, \code{b} parameter for the second, and \code{nu} parameter for the third column. Default is \code{NULL}.}
 
 \item{theta}{An ability parameter vector for using fixed parameter values. Default is \code{NULL}.}
 
@@ -87,6 +94,8 @@ If unspecified, \code{s} is passed on to the value.}
 
 \item{categ}{A scalar or a numeric vector of length \code{nitem_P}. The default is 5.
 If \code{length(categ)>1}, the \emph{i}th element equals the number of categories of the \emph{i}th polyotomous item.}
+
+\item{possible_ans}{Possible options for continuous items (e.g., 0.1, 0.3, 0.5, 0.7, 0.9)}
 }
 \value{
 This function returns a \code{list} of several objects:
@@ -97,6 +106,9 @@ This function returns a \code{list} of several objects:
 \item{item_P}{A matrix of polytomous item parameters.}
 \item{initialitem_P}{A matrix that contains initial item parameter values for polytomous items.}
 \item{data_P}{A matrix of polytomous item responses where rows indicate examinees and columns indicate items.}
+\item{item_D}{A matrix of continuous response item parameters.}
+\item{initialitem_D}{A matrix that contains initial item parameter values for continuous response items.}
+\item{data_D}{A matrix of continuous response item responses where rows indicate examinees and columns indicate items.}
 }
 \description{
 This function generates an artificial item response dataset allowing various options.
@@ -104,21 +116,26 @@ This function generates an artificial item response dataset allowing various opt
 \examples{
 # Dichotomous item responses
 
-Alldata <- DataGeneration(N=500,
+Alldata <- DataGeneration(N = 500,
                           nitem_D = 10)
 
 
 # Polytomous item responses
 
-Alldata <- DataGeneration(N=1000,
+Alldata <- DataGeneration(N = 1000,
                           nitem_P = 10)
 
 
 # Mixed-format items
 
-Alldata <- DataGeneration(N=1000,
+Alldata <- DataGeneration(N = 1000,
                           nitem_D = 20,
                           nitem_P = 10)
+
+# Continuous items
+
+AllData <- DataGeneration(N = 1000,
+                          nitem_C = 10)
 
 # Dataset from non-normal latent density using two-component Gaussian mixture distribution
 

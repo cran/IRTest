@@ -1,17 +1,15 @@
-#' Item and ability parameters estimation for polytomous items
+#' Item and ability parameters estimation for continuous response items
 #'
-#' @description This function estimates IRT item and ability parameters when all items are scored polytomously.
+#' @description This function estimates IRT item and ability parameters when all items are scored continuously.
 #' Based on Bock & Aitkin's (1981) marginal maximum likelihood and EM algorithm (EM-MML), this function provides several latent distribution estimation algorithms which could free the normality assumption on the latent variable.
 #' If the normality assumption is violated, application of these latent distribution estimation methods could reflect non-normal characteristics of the unknown true latent distribution,
-#' and, thus, could provide more accurate parameter estimates (Li, 2021; Woods & Lin, 2009; Woods & Thissen, 2006).
+#' thereby providing more accurate parameter estimates (Li, 2021; Woods & Lin, 2009; Woods & Thissen, 2006).
 #'
 #' @importFrom stats density nlminb
 #' @importFrom utils flush.console
 #'
-#' @param data A matrix or data frame of item responses coded as \code{0, 1, ..., m} for the \code{m+1} category item.
+#' @param data A matrix or data frame of item responses where responses are coded as 0 or 1.
 #' Rows and columns indicate examinees and items, respectively.
-#' @param model A character value for an IRT model to be applied.
-#' Currently, \code{PCM}, \code{GPCM}, and \code{GRM} are available. The default is \code{"GPCM"}.
 #' @param range Range of the latent variable to be considered in the quadrature scheme.
 #' The default is from \code{-6} to \code{6}: \code{c(-6, 6)}.
 #' @param q A numeric value that represents the number of quadrature points. The default value is 121.
@@ -41,26 +39,11 @@
 #' @details
 #' \describe{
 #' \item{
-#' The probability for scoring \eqn{u=k} (i.e., \eqn{k=0, 1, ..., m; m \ge 2})
+#' The probability of a response \eqn{u=x}, where \eqn{0<u<1} (see Martinez, 2023)
 #' }{
-#' 1) Partial credit model (PCM)
-#' \deqn{P(u=0|\theta, b_1, ..., b_{m})=\frac{1}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
-#' \deqn{P(u=1|\theta, b_1, ..., b_{m})=\frac{\exp{(\theta-b_1)}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{\theta-b_v}\right]}}}}
-#' \deqn{\vdots}
-#' \deqn{P(u=m|\theta, b_1, ..., b_{m})=\frac{\exp{\left[\sum_{v=1}^{m}{\theta-b_v}\right]}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{\theta-b_v}\right]}}}}
+#' \deqn{P(u=x | a, b, \nu) = \frac{1}{B(\mu\nu, \,\nu(1-\mu))} u^{\mu\nu-1} (1-u)^{\nu(1-\mu)-1}}
 #'
-#' 2) Generalized partial credit model (GPCM)
-#' \deqn{P(u=0|\theta, a, b_1, ..., b_{m})=\frac{1}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
-#' \deqn{P(u=1|\theta, a, b_1, ..., b_{m})=\frac{\exp{(a(\theta-b_1))}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
-#' \deqn{\vdots}
-#' \deqn{P(u=m|\theta, a, b_1, ..., b_{m})=\frac{\exp{\left[\sum_{v=1}^{m}{a(\theta-b_v)}\right]}}{1+\sum_{c=1}^{m}{\exp{\left[\sum_{v=1}^{c}{a(\theta-b_v)}\right]}}}}
-#'
-#' 3) Graded response model (GRM)
-#' \deqn{P(u=0|\theta, a, b_1, ..., b_{m})=1-\frac{1}{1+\exp{\left[-a(\theta-b_1)\right]}}}
-#' \deqn{P(u=1|\theta, a, b_1, ..., b_{m})=\frac{1}{1+\exp{\left[-a(\theta-b_1)\right]}}-\frac{1}{1+\exp{\left[-a(\theta-b_2)\right]}}}
-#' \deqn{\vdots}
-#' \deqn{P(u=m|\theta, a, b_1, ..., b_{m})=\frac{1}{1+\exp{\left[-a(\theta-b_m)\right]}}-0}
-#'
+#' where \eqn{\mu = \frac{e^{a(\theta -b)}}{1+e^{a(\theta -b)}}}.
 #' }
 #'
 #' \item{
@@ -81,15 +64,16 @@
 #'
 #' 4) Kernel density estimation method
 #' \deqn{P(\theta=X)=\frac{1}{Nh}\sum_{j=1}^{N}{K\left(\frac{X-\theta_j}{h}\right)}}
-#' where \eqn{N} is the number of examinees, \eqn{\theta_j} is \eqn{j}th examinee's ability parameter, \eqn{h} is the bandwidth which corresponds to the argument \code{bw}, and \eqn{K( \bullet )} is a kernel function.
+#' where \eqn{N} is the number of examinees, \eqn{\theta_j} is \eqn{j}th examinee's ability parameter,
+#' \eqn{h} is the bandwidth which corresponds to the argument \code{bandwidth}, and \eqn{K( \cdot )} is a kernel function.
 #' The Gaussian kernel is used in this function.
 #'
 #' 5) Log-linear smoothing method
 #' \deqn{P(\theta=X_{q})=\exp{\left(\beta_{0}+\sum_{m=1}^{h}{\beta_{m}X_{q}^{m}}\right)}}
 #' where \eqn{h} is the hyper parameter which determines the smoothness of the density, and \eqn{\theta} can take total \eqn{Q} finite values (\eqn{X_1, \dots ,X_q, \dots, X_Q}).
+#' }
+#' }
 #'
-#' }
-#' }
 #'
 #' @return This function returns a \code{list} of several objects:
 #' \item{par_est}{The item parameter estimates.}
@@ -101,13 +85,12 @@
 #' \item{Ak}{The estimated discrete latent distribution.
 #' It is discrete (i.e., probability mass function) by the quadrature scheme.}
 #' \item{Pk}{The posterior probabilities of examinees at quadrature points.}
-#' \item{theta}{The estimated ability parameter values. If \code{ability_method = "MLE"}. If an examinee receives a maximum or minimum score for all items, the function returns \eqn{\pm}\code{Inf}.}
+#' \item{theta}{The estimated ability parameter values. If \code{ability_method = "MLE"}, the function returns \eqn{\pm}\code{Inf} for all or none correct answers.}
 #' \item{theta_se}{Standard error of ability estimates. The asymptotic standard errors for \code{ability_method = "MLE"} (the function returns \code{NA} for all or none correct answers).
 #' The standard deviations of the posterior distributions for \code{ability_method = "MLE"}.}
 #' \item{logL}{The deviance (i.e., -2log\emph{L}).}
 #' \item{density_par}{The estimated density parameters.}
 #' \item{Options}{A replication of input arguments and other information.}
-#'
 #'
 #'
 #' @author Seewoo Li \email{cu@@yonsei.ac.kr}
@@ -121,6 +104,8 @@
 #'
 #' Li, S. (2022). \emph{The effect of estimating latent distribution using kernel density estimation method on the accuracy and efficiency of parameter estimation of item response models} [Master's thesis, Yonsei University, Seoul]. Yonsei University Library.
 #'
+#' Martinez, A. J. (2023). Beta item factor analysis for asymmetric, bounded, and continuous item response data. \emph{OSF}. DOI:10.31234/osf.io/tp8sx.
+#'
 #' Mislevy, R. J. (1984). Estimating latent distributions. \emph{Psychometrika, 49}(3), 359-381.
 #'
 #' Mislevy, R. J., & Bock, R. D. (1985). Implementation of the EM algorithm in the estimation of item parameters: The BILOG computer program. In D. J. Weiss (Ed.). \emph{Proceedings of the 1982 item response theory and computerized adaptive testing conference} (pp. 189-202). University of Minnesota, Department of Psychology, Computerized Adaptive Testing Conference.
@@ -133,39 +118,25 @@
 #'
 #' @examples
 #' \donttest{
-#' # Preparation of dichotomous item response data
-#'
-#' data <- DataGeneration(N=1000,
-#'                        nitem_P = 8)$data_P
+#' # Generating a continuous item response data
+#' data <- DataGeneration(N = 1000, nitem_C = 10)$data_C
 #'
 #' # Analysis
+#' M1 <- IRTest_Cont(data, max_iter = 3) # increase `max_iter` in real analyses.
+#' }
 #'
-#' M1 <- IRTest_Poly(data)
-#'}
-IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialitem=NULL,
-                        ability_method = 'EAP', latent_dist="Normal",
-                        max_iter=200, threshold=0.0001,bandwidth="SJ-ste",h=NULL){
+IRTest_Cont <- function(data, range = c(-6,6), q = 121, initialitem=NULL,
+                        ability_method = 'EAP', latent_dist="Normal", max_iter=200,
+                        threshold=0.0001, bandwidth="SJ-ste", h=NULL){
 
-  categories <- apply(data, MARGIN = 2, FUN = extract_cat, simplify = FALSE)
-
-  data <- reorder_mat(as.matrix(data))
   if(is.null(initialitem)){
-    category <- apply(data, 2, max, na.rm = TRUE)
-    initialitem <- matrix(nrow = ncol(data), ncol = max(category)+1)
-    initialitem[,1] <- 1
-    for(i in 1:nrow(initialitem)){
-      if(model!="GRM"){
-        initialitem[i, 2:(category[i]+1)] <- 0
-      } else {
-        initialitem[i, 2:(category[i]+1)] <- seq(-.01,.01,length.out=category[i])
-      }
-    }
+    initialitem <- matrix(rep(c(1,0,10), each = ncol(data)), ncol = 3)
   }
 
-  Options = list(initialitem=initialitem, data=data, range=range, q=q, model=model,
+  Options = list(initialitem=initialitem, data=data, range=range, q=q,
                  ability_method=ability_method,latent_dist=latent_dist,
-                 max_iter=max_iter, threshold=threshold,bandwidth=bandwidth,h=h,
-                 categories=categories)
+                 max_iter=max_iter, threshold=threshold,bandwidth=bandwidth, h=h#,categories=categories
+                 )
 
   I <- initialitem
   Xk <- seq(range[1],range[2],length=q)
@@ -183,18 +154,14 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1, range=range, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model=model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item = initialitem, data = data, range = range, q = q, Xk=Xk, Ak=Ak)
+      initialitem <- Mstep_Cont(E, initialitem, data)
 
-      if(model == "PCM"){
-        ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range)
-        initialitem[,1] <- initialitem[,1]*ld_est$s
-        initialitem[,-1] <- initialitem[,-1]/ld_est$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+        )
       I <- initialitem
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
@@ -207,23 +174,19 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model=model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1, range=range, Xk=Xk, Ak=Ak)
+      initialitem <- Mstep_Cont(E, initialitem, data)
 
       ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
 
-      if(model == "PCM"){
-        initialitem[,1] <- initialitem[,1]*ld_est$s
-        initialitem[,-1] <- initialitem[,-1]/ld_est$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+      )
       I <- initialitem
-
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
@@ -234,19 +197,16 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, prob=prob, d=d, sd_ratio=sd_ratio, range = range, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model=model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item=initialitem, data=data, q=q, prob=prob, d=d, sd_ratio=sd_ratio, range = range)
+      initialitem <- Mstep_Cont(E, initialitem, data)
       M2 <- M2step(E)
       prob = M2$prob; d = M2$d; sd_ratio = M2$sd_ratio
 
-      if(model == "PCM"){
-        initialitem[,1] <- initialitem[,1]*M2$s
-        initialitem[,-1] <- initialitem[,-1]/M2$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/M2$s
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+      )
       I <- initialitem
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
@@ -260,23 +220,20 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model=model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1,
+                 range=range, Xk=Xk, Ak=Ak)
+      initialitem <- Mstep_Cont(E, initialitem, data)
 
       ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, bandwidth=bandwidth, N=N, q=q)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
 
-      if(model == "PCM"){
-        initialitem[,1] <- initialitem[,1]*ld_est$s
-        initialitem[,-1] <- initialitem[,-1]/ld_est$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+      )
       I <- initialitem
-
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
@@ -284,71 +241,57 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
   }
 
   # Davidian curve method
-  if(latent_dist %in% c("DC", "Davidian")){
+  if(latent_dist%in% c("DC", "Davidian")){
     density_par <- nlminb(start = rep(1,h),
-                     objective = optim_phi,
-                     gradient = optim_phi_grad,
-                     hp=h,
-                     lower = -pi/2,
-                     upper = pi/2)$par
+                          objective = optim_phi,
+                          gradient = optim_phi_grad,
+                          hp=h)$par
 
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model = model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak)
+      initialitem <- Mstep_Cont(E, initialitem, data)
 
-      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par, N=N)
+      ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par,N=N)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
       density_par <- ld_est$par
 
-      if(model == "PCM"){
-        initialitem[,1] <- initialitem[,1]*ld_est$s
-        initialitem[,-1] <- initialitem[,-1]/ld_est$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+      )
       I <- initialitem
-
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
   }
-  # Log-linear smoothing
+
+  # Log-linear smoothing method
   if(latent_dist=="LLS"){
     density_par <- rep(0, h)
     while(iter < max_iter & diff > threshold){
       iter <- iter +1
 
-      E <- Estep_Poly(item=initialitem, data=data, q=q, range=range, Xk=Xk, Ak=Ak, model=model)
-      M1 <- Mstep_Poly(E, item=initialitem, model=model)
-      initialitem <- M1[[1]]
+      E <- Estep_Cont(item=initialitem, data=data, q=q, prob=0.5, d=0, sd_ratio=1,
+                 range=range, Xk=Xk, Ak=Ak)
+      initialitem <- Mstep_Cont(E, initialitem, data)
 
       ld_est <- latent_dist_est(method = latent_dist, Xk = E$Xk, posterior = E$fk, range=range, par=density_par, N=N)
       Xk <- ld_est$Xk
       Ak <- ld_est$posterior_density
 
-      if(model == "PCM"){
-        initialitem[,1] <- initialitem[,1]*ld_est$s
-        initialitem[,-1] <- initialitem[,-1]/ld_est$s
-        M1[[2]][,-1] <- M1[[2]][,-1]/ld_est$s
-        if(iter>3){
-          density_par <- ld_est$par
-        }
-      } else {
-        density_par <- ld_est$par
-      }
-
-      diff <- max(abs(I-initialitem), na.rm = TRUE)
+      diff <- max(
+        max(abs(I[,-3]-initialitem[,-3]), na.rm = TRUE),
+        max(abs(log(I[,3])-log(initialitem[,3])), na.rm = TRUE),
+        na.rm = TRUE
+      )
       I <- initialitem
-
       message("\r","\r","Method = ",latent_dist,", EM cycle = ",iter,", Max-Change = ",diff,sep="",appendLF=FALSE)
       flush.console()
     }
-    density_par <- ld_est$par
   }
 
   # ability parameter estimation
@@ -359,25 +302,24 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
     theta <- as.numeric(E$Pk%*%E$Xk)
     theta_se <- sqrt(as.numeric(E$Pk%*%(E$Xk^2))-theta^2)
   } else if(ability_method == 'MLE'){
-    mle_result <- MLE_theta(item = initialitem, data = data, type = model)
+    mle_result <- MLE_theta(item = initialitem, data = data, type = "cont")
     theta <- mle_result[[1]]
     theta_se <- mle_result[[2]]
   }
-  dn <- list(colnames(data),c("a", paste("b", 1:(ncol(initialitem)-1), sep="_")))
+  dn <- list(colnames(data),c("a", "b", "nu"))
   dimnames(initialitem) <- dn
-  dimnames(M1[[2]]) <- dn
 
   # preparation for outputs
+
   logL <- 0
   for(i in 1:q){
-    logL <- logL+sum(logLikeli_Poly(initialitem, data, theta = Xk[i], model=model)*E$Pk[,i])
+    logL <- logL+sum(logLikeli_Cont(initialitem, data, theta = Xk[i])*E$Pk[,i])
   }
   E$Pk[E$Pk==0]<- .Machine$double.xmin
   Ak[Ak==0] <- .Machine$double.xmin
   logL <- logL + as.numeric(E$fk%*%log(Ak)) - sum(E$Pk*log(E$Pk))
   return(structure(
     list(par_est=initialitem,
-         se=M1[[2]],
          fk=E$fk,
          iter=iter,
          quad=Xk,
@@ -389,8 +331,8 @@ IRTest_Poly <- function(data, model="GPCM", range = c(-6,6), q = 121, initialite
          logL=-2*logL, # deviance
          density_par = density_par,
          Options = Options # specified argument values
-         ),
-    class = c("poly", "IRTest", "list")
-    )
+    ),
+    class = c("cont", "IRTest", "list")
+  )
   )
 }
