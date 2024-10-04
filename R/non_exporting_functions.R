@@ -2,7 +2,7 @@
 # citation
 #################################################################################################################
 .onAttach <- function(libname, pkgname) {
-  package_citation <- "Li, S. (2024). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 2.0.0). R package. \n"
+  package_citation <- "Li, S. (2024). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 2.1.0). R package. \n"
   package_URL <- "URL: https://CRAN.R-project.org/package=IRTest"
   packageStartupMessage("Thank you for using IRTest!")
   packageStartupMessage("Please cite the package as: \n")
@@ -668,29 +668,56 @@ PDs <- function(probab, param, pmat, pcummat, a_supp, par, tcum){
   }
 }
 
-#' @importFrom stats optim
-#'
-Mstep_Cont <- function(E, item, data){
+# Mstep_Cont2 <- function(E, item, data){
+#   item_estimated <- item
+#   item[,3] <- log(item[,3])
+#   for(i in 1:nrow(item)){
+#     item_estimated[i,] <- optim(item[i,], fn = LL_Cont, gr = grad_Cont, theta=E$Xk, data=data[,i], Pk = E$Pk, method = "BFGS")$par
+#   }
+#   item_estimated[,3] <- exp(item_estimated[,3])
+#   return(list(item_estimated,NULL))
+# }
+
+Mstep_Cont <- function(E, item, data, threshold = 1e-7, max_iter = 20){
+  nitem <- nrow(item)
   item_estimated <- item
-  item[,3] <- log(item[,3])
-  for(i in 1:nrow(item)){
-    item_estimated[i,] <- optim(item[i,], fn = LL_Cont, gr = grad_Cont, theta=E$Xk, data=data[,i], Pk = E$Pk, method = "BFGS")$par
+  se <- matrix(nrow = nrow(item), ncol = ncol(item))
+  for(i in 1:nitem){
+    par <- item[i,]
+    par[3] <- log(par[3])
+    iter <- 0
+    div <- 3
+    repeat{
+      iter <- iter + 1
+
+      l1l2 <- cont_L1L2(item = par, Xk = E$Xk, data = data[,i], Pk = E$Pk)
+      diff <- l1l2[[1]]%*%l1l2[[2]]
+
+      if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+        par <- par
+      } else{
+        if( sum(abs(diff)) > div){
+          if((max(abs(diff[-1]))/abs(diff[1])>1000) & (abs(par[1]) >= abs(par[1]-diff[1]))){
+            par[1] <- -par[1]
+          } else{
+            par <- par-diff/2
+          }
+        } else {
+          par <- par-diff
+          div <- sum(abs(diff))
+        }
+      }
+      if( div <= threshold | iter > max_iter) break
+    }
+    par[3] <- exp(par[3])
+    item_estimated[i,] <- par
+    se[i,] <- suppressWarnings(sqrt(-diag(l1l2[[2]])))
   }
-  item_estimated[,3] <- exp(item_estimated[,3])
-  return(item_estimated)
+
+  return(list(item_estimated, se))
 }
 
-# LL_Cont <- function(item, theta, data, Pk){
-#   nu <- exp(item[3])
-#   LL <- 0
-#   for(i in 1:length(theta)){
-#     mu <- P(theta = theta[i], a = item[1], b = item[2])
-#     alpha <- mu*nu
-#     beta <- nu*(1-mu)
-#     LL <- LL+sum(Pk[,i]*log(dbeta(data, alpha, beta)), na.rm = TRUE)
-#   }
-#   return(-LL)
-# }
+
 #' @importFrom stats dbeta
 #'
 LL_Cont <- function(item, theta, data, Pk){
@@ -702,24 +729,7 @@ LL_Cont <- function(item, theta, data, Pk){
   return(-LL)
 }
 
-# grad_Cont <- function(item, theta, data, Pk){
-#   item[3] <- exp(item[3])
-#   La <- 0
-#   Lb <- 0
-#   Lnu <- 0
-#   for(i in 1:length(theta)){
-#     mu <- P(theta = theta[i], a = item[1], b = item[2])
-#     alpha <- mu*item[3]
-#     beta <- item[3]*(1-mu)
-#     v1 <- log(data)-digamma(alpha)
-#     v2 <- log(1-data)-digamma(beta)
-#     La  <- La + sum(Pk[,i]*(theta[i]-item[2])*item[3]*mu*(1-mu)*(v1-v2), na.rm = TRUE)
-#     Lb  <- Lb + sum(-Pk[,i]*item[1]*item[3]*mu*(1-mu)*(v1-v2), na.rm = TRUE)
-#     Lnu <- Lnu + sum(Pk[,i]*(mu*v1+(1-mu)*v2+digamma(item[3])), na.rm = TRUE)
-#   }
-#
-#   return(-c(La, Lb, Lnu))
-# }
+
 grad_Cont <- function(item, theta, data, Pk){
   nu <- exp(item[3])
   mu <- P(theta = rep(theta, each=nrow(Pk)), a = item[1], b = item[2])
@@ -731,6 +741,61 @@ grad_Cont <- function(item, theta, data, Pk){
   Lb <- sum(-as.vector(Pk)*item[1]*nu*mu*(1-mu)*(v1-v2), na.rm = TRUE)
   Lnu <- sum(as.vector(Pk)*(mu*v1+(1-mu)*v2+digamma(nu)), na.rm = TRUE)
   return(-c(La, Lb, Lnu))
+}
+
+cont_L1L2 <- function(item, Xk, data, Pk){
+  fk <- colSums(Pk[!is.na(data),])
+  nu <- exp(item[3])
+  mu <- P(theta = Xk, a = item[1], b = item[2])
+  aph <- mu*nu
+  bt <- nu*(1-mu)
+  s1 <- as.vector(crossprod(log(data[!is.na(data)]), Pk[!is.na(data),]))
+  s2 <- as.vector(crossprod(log(1-data[!is.na(data)]), Pk[!is.na(data),]))
+  La <- sum(
+    (Xk-item[2])*aph*bt/nu*(s1-s2-fk*(digamma(aph)-digamma(bt))),
+    na.rm = TRUE)
+  Lb <- -item[1]*sum(
+    aph*bt/nu*(s1-s2-fk*(digamma(aph)-digamma(bt))),
+    na.rm = TRUE)
+  Lxi <- nu*sum(
+    fk*digamma(nu)+mu*(s1-fk*digamma(aph))+(1-mu)*(s2-fk*digamma(bt)),
+    na.rm = TRUE)
+
+  Laa <- -sum(
+    (((Xk-item[2])*aph*bt/nu)^2)*fk*(trigamma(aph)+trigamma(bt)),
+    na.rm = TRUE
+  )
+  Lab <- item[1]*sum(
+    (Xk-item[2])*((aph*bt/nu)^2)*fk*(trigamma(aph)+trigamma(bt)),
+    na.rm = TRUE
+  )
+  Lbb <- -(item[1]^2)*sum(
+    ((aph*bt/nu)^2)*fk*(trigamma(aph)+trigamma(bt)),
+    na.rm = TRUE
+  )
+  Laxi <- -sum(
+    (Xk-item[2])*aph*bt*fk*(mu*trigamma(aph)-(1-mu)*trigamma(bt)),
+    na.rm = TRUE
+  )
+  Lbxi <- item[1]*sum(
+    aph*bt*fk*(mu*trigamma(aph)-(1-mu)*trigamma(bt)),
+    na.rm = TRUE
+  )
+  Lxixi <- (nu^2)*sum(fk)*trigamma(nu) - sum(
+    fk*((aph^2)*trigamma(aph)+(bt^2)*trigamma(bt)),
+    na.rm = TRUE)
+
+  LL_matrix <- matrix(c(
+    Laa, Lab, Laxi,
+    Lab, Lbb, Lbxi,
+    Laxi, Lbxi, Lxixi
+  ),
+  nrow = 3,
+  byrow = TRUE)
+
+  return(list(L1 = c(La, Lb, Lxi),
+              L2 = solve(LL_matrix))
+         )
 }
 
 #################################################################################################################
@@ -797,19 +862,25 @@ MLE_theta <- function(item, data, type){
       } else {
         th <- 0
         thres <- 1
-        while(thres > 0.0001){
-          p_ <- P(theta = th, a = item[,1], b = item[,2], c = item[,3])
+        iter <- 0
+        while((thres > 0.0001) & (iter < 100)){
+          iter <- iter + 1
+          p_ <- P(theta = th, a = item[,1], b = item[,2], c = 0)
           p <- p_*(1-item[,3])+item[,3]
           L1 <- sum(
             item[,1]*p_/p*(data[i,]-p),
             na.rm = TRUE
           )
           L2 <- -sum(
-            item[,1]^2*p_^2*(1-p)/p
+            item[!is.na(data[i,]),1]^2*p_^2*(1-p)/p
           )
           diff <- L1/L2
-          th <- th - diff
-          thres <- abs(diff)
+          if(abs(diff)>thres){
+            th <- th - diff/2
+          } else{
+            th <- th - diff
+            thres <- abs(diff)
+          }
         }
         mle <- append(mle, th)
         se <- append(se, sqrt(-1/L2))
@@ -828,11 +899,17 @@ MLE_theta <- function(item, data, type){
       } else {
         th <- 0
         thres <- 1
-        while(thres > 0.0001){
+        iter <- 0
+        while((thres > 0.0001) & (iter < 100)){
+          iter <- iter + 1
           l1l2 <- L1L2_Poly(th, item, data, type, ncat,i )
           diff <- l1l2[1]/l1l2[2]
-          th <- th - diff
-          thres <- abs(diff)
+          if(abs(diff)>thres){
+            th <- th - diff/2
+          } else{
+            th <- th - diff
+            thres <- abs(diff)
+          }
         }
         mle <- append(mle, th)
         se <- append(se, sqrt(-1/l1l2[2]))
@@ -853,16 +930,18 @@ MLE_theta <- function(item, data, type){
       } else {
         th <- 0
         thres <- 1
-        while(thres > 0.0001){
+        iter <- 0
+        while((thres > 0.0001) & (iter < 100)){
+          iter <- iter + 1
           # dichotomous items
-          p_ <- P(theta = th, a = item[[1]][,1], b = item[[1]][,2], c = item[[1]][,3])
+          p_ <- P(theta = th, a = item[[1]][,1], b = item[[1]][,2], c = 0)
           p <- p_*(1-item[[1]][,3])+item[[1]][,3]
           L1 <- sum(
             item[[1]][,1]*p_/p*(data[[1]][i,]-p),
             na.rm = TRUE
           )
           L2 <- -sum(
-            item[[1]][,1]^2*p_^2*(1-p)/p
+            item[[1]][!is.na(data[[1]][i,]),1]^2*p_^2*(1-p)/p
           )
 
           # polytomous items
@@ -870,8 +949,12 @@ MLE_theta <- function(item, data, type){
 
           # add them
           diff <- (L1+l1l2[1])/(L2+l1l2[2])
-          th <- th - diff
-          thres <- abs(diff)
+          if(abs(diff)>thres){
+            th <- th - diff/2
+          } else{
+            th <- th - diff
+            thres <- abs(diff)
+          }
         }
         mle <- append(mle, th)
         se <- append(se, sqrt(-1/l1l2[2]))
@@ -883,15 +966,178 @@ MLE_theta <- function(item, data, type){
 
       th <- 0
       thres <- 1
-      while(thres > 0.0001){
+      iter <- 0
+      while((thres > 0.0001) & (iter < 100)){
+        iter <- iter + 1
         L1 <- L1_Cont(data = data[i,], theta = th, a = item[,1], b = item[,2], nu = item[,3])
-        L2 <- -L2_Cont(theta = th, a = item[,1], b = item[,2], nu = item[,3])
+        L2 <- -L2_Cont(theta = th, a = item[!is.na(data[i,]),1], b = item[!is.na(data[i,]),2], nu = item[!is.na(data[i,]),3])
         diff <- sum(L1, na.rm = TRUE)/sum(L2, na.rm = TRUE)
-        th <- th - diff
-        thres <- abs(diff)
+        if(abs(diff)>thres){
+          th <- th - diff/2
+        } else{
+          th <- th - diff
+          thres <- abs(diff)
+        }
       }
       mle <- append(mle, th)
       se <- append(se, sqrt(-1/sum(L2, na.rm = TRUE)))
+    }
+  }
+  return(list(mle=mle,
+              se=se))
+}
+
+WLE_theta <- function(item, data, type){
+  message("\n",appendLF=FALSE)
+  mle <- NULL
+  se <- NULL
+  if(all(type=="dich")){
+    for(i in 1:nrow(data)){
+      tryCatch(
+        {
+          message("\r","\r","WLE for ability parameter estimation, ", i,"/",nrow(data),sep="",appendLF=FALSE)
+
+          th <- 0
+          thres <- 1
+          iter <- 0
+          while((thres > 0.0001) & (iter < 100)){
+            iter <- iter + 1
+            p_ <- P(theta = th, a = item[,1], b = item[,2], c = 0)
+            p <- p_*(1-item[,3])+item[,3]
+            L1 <- sum(
+              item[,1]*p_/p*(data[i,]-p),
+              na.rm = TRUE
+            )
+            L2 <- -sum(
+              item[!is.na(data[i,]),1]^2*p_^2*(1-p)/p
+            )
+            diff <- (L1+wle(th, item[!is.na(data[i,]),], type))/L2
+            if(abs(diff)>thres){
+              th <- th - diff/2
+            } else{
+              th <- th - diff
+              thres <- abs(diff)
+            }
+          }
+          mle <- append(mle, th)
+          se <- append(se, sqrt(-1/L2))
+        }, error = function(e){
+          message("\n","WLE failed to converge for the entry ", i,"\n",sep="",appendLF=FALSE)
+
+          mle <<- append(mle, NA)
+          se <<- append(se, NA)
+        }
+      )
+
+    }
+  } else if(all(type %in% c("PCM", "GPCM", "GRM"))){
+    ncat <- rowSums(!is.na(item))-1
+    for(i in 1:nrow(data)){
+      tryCatch(
+        {
+          message("\r","\r","WLE for ability parameter estimation, ", i,"/",nrow(data),sep="",appendLF=FALSE)
+
+          th <- 0
+          thres <- 1
+          iter <- 0
+          while((thres > 0.0001) & (iter < 100)){
+            iter <- iter + 1
+            l1l2 <- L1L2_Poly(th, item, data, type, ncat,i )
+            diff <- (l1l2[1]+wle(th, item[!is.na(data[i,]),], type))/l1l2[2]
+            if(abs(diff)>thres){
+              th <- th - diff/2
+            } else{
+              th <- th - diff
+              thres <- abs(diff)
+            }
+          }
+          mle <- append(mle, th)
+          se <- append(se, sqrt(-1/l1l2[2]))
+        }, error = function(e){
+          message("\n","WLE failed to converge for the entry ", i,"\n",sep="",appendLF=FALSE)
+
+          mle <<- append(mle, NA)
+          se <<- append(se, NA)
+        }
+      )
+    }
+  } else if(any(type %in% c("mix"))){
+    ncat <- rowSums(!is.na(item[[2]]))-1
+    for(i in 1:nrow(data[[1]])){
+      tryCatch(
+        {
+          message("\r","\r","WLE for ability parameter estimation, ", i,"/",nrow(data[[1]]),sep="",appendLF=FALSE)
+
+          th <- 0
+          thres <- 1
+          iter <- 0
+          while((thres > 0.0001) & (iter < 100)){
+            iter <- iter + 1
+            # dichotomous items
+            p_ <- P(theta = th, a = item[[1]][,1], b = item[[1]][,2], c = item[[1]][,3])
+            p <- p_*(1-item[[1]][,3])+item[[1]][,3]
+            L1 <- sum(
+              item[[1]][,1]*p_/p*(data[[1]][i,]-p),
+              na.rm = TRUE
+            )
+            L2 <- -sum(
+              item[[1]][!is.na(data[[1]][i,]),1]^2*p_^2*(1-p)/p
+            )
+
+            # polytomous items
+            l1l2 <- L1L2_Poly(th=th, item=item[[2]], data=data[[2]], type=type[2], ncat=ncat,i=i)
+
+            # add them
+            diff <- (L1+l1l2[1]+wle(th, item[[1]][!is.na(data[[1]][i,]),], "dich")+wle(th, item[[2]][!is.na(data[[2]][i,]),], type[2]))/(L2+l1l2[2])
+            if(abs(diff)>thres){
+              th <- th - diff/2
+            } else{
+              th <- th - diff
+              thres <- abs(diff)
+            }
+          }
+          mle <- append(mle, th)
+          se <- append(se, sqrt(-1/l1l2[2]))
+        }, error = function(e){
+          message("\n","WLE failed to converge for the entry ", i,"\n",sep="",appendLF=FALSE)
+
+          mle <<- append(mle, NA)
+          se <<- append(se, NA)
+        }
+      )
+
+    }
+  } else if(all(type=="cont")){
+    for(i in 1:nrow(data)){
+      tryCatch(
+        {
+          message("\r","\r","WLE for ability parameter estimation, ", i,"/",nrow(data),sep="",appendLF=FALSE)
+
+          th <- 0
+          thres <- 1
+          iter <- 0
+          while((thres > 0.0001) & (iter < 100)){
+            iter <- iter + 1
+            L1 <- L1_Cont(data = data[i,], theta = th, a = item[,1], b = item[,2], nu = item[,3])
+            L2 <- -L2_Cont(theta = th, a = item[!is.na(data[i,]),1], b = item[!is.na(data[i,]),2], nu = item[!is.na(data[i,]),3])
+            diff <- (sum(L1, na.rm = TRUE)+wle(th, item[!is.na(data[i,]),], "cont"))/sum(L2, na.rm = TRUE)
+            if(abs(diff)>thres){
+              th <- th - diff/2
+            } else{
+              th <- th - diff
+              thres <- abs(diff)
+            }
+          }
+          mle <- append(mle, th)
+          se <- append(se, sqrt(-1/sum(L2, na.rm = TRUE)))
+        }, error = function(e){
+          message("\n","WLE failed to converge for the entry ", i,"\n",sep="",appendLF=FALSE)
+
+          mle <<- append(mle, NA)
+          se <<- append(se, NA)
+        }
+      )
+
     }
   }
   return(list(mle=mle,
@@ -944,6 +1190,50 @@ L1L2_Poly <- function(th, item, data, type, ncat, i){
     )
   }
   return(c(L1, L2))
+}
+
+wle <- function(theta, item, type){
+  if(type == "dich"){
+    p_ <- P(theta = theta, a = item[,1], b = item[,2], c = 0)
+    p0 <- p_*(1-item[,3])+item[,3]
+    p1 <- item[,1]*(1-item[,3])*p_*(1-p_)
+    p2 <- (item[,1]^2)*(1-item[,3])*p_*(1-p_)*(1-2*p_)
+    J <- sum((p1*p2)/(p0*(1-p0)), na.rm = TRUE)
+    I <- sum((p1^2)/(p0*(1-p0)), na.rm = TRUE)
+  } else if(type %in% c("PCM", "GPCM")){
+    p0 <- P_P(theta, a = item[,1], b = item[,-1])
+    na_loc <- is.na(p0)
+    p0[na_loc] <- 0
+    N <- 0:(ncol(p0)-1)
+    p1 <- p0 * t(outer(N, p0 %*% N, FUN = "-")[,,1]) * item[,1]
+    p2 <- p1 * t(outer(N, p0 %*% N, FUN = "-")[,,1]) * item[,1] - p0 * (c(p1 %*% N) * item[,1])
+    p0[na_loc] <- NA
+    p1[na_loc] <- NA
+    p2[na_loc] <- NA
+    J <- sum((p1*p2)/p0, na.rm = TRUE)
+    I <- sum((p1^2)/p0, na.rm = TRUE)
+  } else if(type == "GRM"){
+    p0 <- P_G(theta, item[,1], item[,-1])
+    p_ <- P(theta = theta, a = item[,1], b = item[,-1])
+    p1_ <- p_*(1-p_)*item[,1]
+    p2_ <- p1_*(1-2*p_)*item[,1]
+    p1 <- cbind(0, p1_) - add0(cbind(p1_,NA))
+    p2 <- cbind(0, p2_) - add0(cbind(p2_,NA))
+    J <- sum((p1*p2)/p0, na.rm = TRUE)
+    I <- sum((p1^2)/p0, na.rm = TRUE)
+  } else if(type == "cont"){
+    nu <- item[,3]
+    mu <- P(theta, item[,1], item[,2])
+    alpha <- mu*nu
+    beta <- nu*(1-mu)
+    J <- - sum(
+      (item[,1]/nu)^3*alpha^2*beta^2*(beta-alpha)*(trigamma(alpha)+trigamma(beta))
+             )
+    I <- sum(
+      ((item[,1]/nu)*alpha*beta)^2*(trigamma(alpha)+trigamma(beta))
+    )
+  }
+  return(J/(2*I))
 }
 
 #################################################################################################################
@@ -1181,3 +1471,50 @@ DC.LL <- function (phi, theta, freq) {
 DC.grad <- function (phi, theta, freq) {
   -freq%*%dcurver::dc_grad(theta, phi)
 }
+
+#################################################################################################################
+# Uniform to categorical values
+#################################################################################################################
+yyy <- function(x){
+  y <- exp(x)/(1+exp(x))^2
+  return(y/sum(y))
+}
+
+logistic_means <- function(x){
+  cuts <- 1/x*1:(x-1)
+  cuts <- c(1e-15, cuts, (1-1e-15))
+  cuts <- log(cuts/(1-cuts))
+
+  means <- NULL
+  for(i in 1:x){
+    xxx <- seq(cuts[i],cuts[i+1],0.0001)
+    means <- append(
+      means,
+      sum(xxx * yyy(xxx))
+    )
+  }
+  return(means)
+}
+
+logit_inv <- function(x)exp(x)/(1+exp(x))
+
+unif2cat <- function(data, labels = NULL, x = 5){
+  if(is.null(labels)){
+    cuts <- 1/x*(1:(x-1))
+    cuts <- log(cuts/(1-cuts))
+    breaks <- c(-Inf, cuts, Inf)
+    labels <- logit_inv(logistic_means(x))
+    cut_data <- cut(log(data/(1-data)), breaks = breaks, labels = FALSE)
+    return(labels[cut_data])
+  } else {
+    if(length(data) == 1){
+      return(labels[which.min(abs(data - labels))])
+    } else {
+      cuts <- 1/x*(1:x)
+      cuts <- cuts - (cuts[2]-cuts[1])/2
+      labss <- apply(abs(outer(data, cuts, FUN = "-")), MARGIN = 1, FUN = which.min)
+      return(cuts[labss])
+    }
+  }
+}
+

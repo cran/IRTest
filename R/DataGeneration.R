@@ -3,7 +3,7 @@
 #' @description This function generates an artificial item response dataset allowing various options.
 #'
 #' @importFrom betafunctions rBeta.4P
-#' @importFrom stats dnorm rbinom rchisq rnorm runif rbeta
+#' @importFrom stats dnorm rbinom rchisq rnorm runif rbeta rgamma
 #'
 #' @param seed A numeric value that is used for random sampling.
 #' Seed number can guarantee a replicability of the result.
@@ -14,7 +14,7 @@
 #' @param model_D A vector or a character string that represents the probability model for the dichotomous items.
 #' @param model_P A character string that represents the probability model for the polytomous items.
 #' @param latent_dist A character string that determines the type of latent distribution.
-#' Currently available options are \code{"beta"} (four-parameter beta distribution; \code{\link{rBeta.4P}}),
+#' Currently available options are \code{"beta"} (four-parameter beta distribution; \code{betafunctions::rBeta.4P}),
 #' \code{"chi"} (\eqn{\chi^2} distribution; \code{\link{rchisq}}),
 #' \code{"normal"}, \code{"Normal"}, or \code{"N"} (standard normal distribution; \code{\link{rnorm}}),
 #' and \code{"Mixture"} or \code{"2NM"} (two-component Gaussian mixture distribution; see Li (2021) for details.)
@@ -110,7 +110,7 @@ DataGeneration <- function(seed=1, N=2000,
                            a_l=0.8, a_u=2.5,
                            b_m=NULL, b_sd=NULL,
                            c_l=0, c_u=0.2, categ=5,
-                           possible_ans = seq(.1,.9,length=5)){
+                           possible_ans = c(.1,.3,.5,.7,.9)){
   initialitem_D=NULL; data_D=NULL
   initialitem_P=NULL; data_P=NULL
   initialitem_C=NULL; data_C=NULL
@@ -134,7 +134,7 @@ DataGeneration <- function(seed=1, N=2000,
       stop("Specify the type of the latent distribution.")
     }else if(latent_dist=="beta"){
       set.seed(seed)
-      theta <- rBeta.4P(n=N, alpha = 3.79, beta= 10.21, l=-2.36, u=6.36)
+      theta <- betafunctions::rBeta.4P(n=N, alpha = 3.79, beta= 10.21, l=-2.36, u=6.36)
     }else if(latent_dist=="chi"){
       set.seed(seed)
       theta <- scale(rchisq(N,df=8))
@@ -273,9 +273,8 @@ DataGeneration <- function(seed=1, N=2000,
   }
 
 
-  # item parameters for polytomous items
+  # item parameters for continuous items
   if(is.null(item_C)){
-    a_l=0.5; a_u=1.5
     if((nitem_C!=0)&(!is.null(nitem_C))){
       data_C <- matrix(nrow = N, ncol = nitem_C)
       item_C <- matrix(nrow = nitem_C, ncol = 3)
@@ -300,16 +299,27 @@ DataGeneration <- function(seed=1, N=2000,
       )
       initialitem_C[,1] <- (a_l+a_u)/2
 
-      item_C[,3] <- 10
+      item_C[,3] <- round(rgamma(nitem_C, shape = 10, scale = 1), 2)
       initialitem_C[,3] <- 10
 
       # item responses
       # possible_ans <- seq(0.05,.95,length=10)#c(.1, .3, .5, .7, .9)
-
-      for(i in 1:nitem_C){
-        for(j in 1:N){
-          p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
-          data_C[j,i] <- possible_ans[which.min(abs(rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3]) - possible_ans))]
+      if(is.null(possible_ans)){
+        for(i in 1:nitem_C){
+          for(j in 1:N){
+            p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
+            data_C[j,i] <- rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3])
+          }
+        }
+      }else{
+        if(length(possible_ans) == 1){
+          possible_ans <- logit_inv(logistic_means(possible_ans))
+        }
+        for(i in 1:nitem_C){
+          for(j in 1:N){
+            p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
+            data_C[j,i] <- unif2cat(rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3]), labels = possible_ans)
+          }
         }
       }
     }
@@ -324,11 +334,22 @@ DataGeneration <- function(seed=1, N=2000,
 
       # item responses
       # possible_ans <- seq(0.05,.95,length=10)#c(.1, .3, .5, .7, .9)
-
-      for(i in 1:nitem_C){
-        for(j in 1:N){
-          p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
-          data_C[j,i] <- possible_ans[which.min(abs(rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3]) - possible_ans))]
+      if(is.null(possible_ans)){
+        for(i in 1:nitem_C){
+          for(j in 1:N){
+            p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
+            data_C[j,i] <- rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3])
+          }
+        }
+      }else{
+        if(length(possible_ans) == 1){
+          possible_ans <- logit_inv(logistic_means(possible_ans))
+        }
+        for(i in 1:nitem_C){
+          for(j in 1:N){
+            p <- P(theta = theta[j], a = item_C[i,1], b = item_C[i,2])
+            data_C[j,i] <- unif2cat(rbeta(1, p*item_C[i,3], (1-p)*item_C[i,3]), labels = possible_ans)
+          }
         }
       }
     }
