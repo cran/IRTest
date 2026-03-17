@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -22,13 +22,13 @@ data <- Alldata$data_D
 theta <- Alldata$theta
 colnames(data) <- paste0("item", 1:15)
 
-## ---- results='hide', message=FALSE-------------------------------------------
+## ----results='hide', message=FALSE--------------------------------------------
 Mod1 <- IRTest_Dich(data = data,
                     model = 2,
                     latent_dist = "LLS",
                     h=4)
 
-## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
+## ----message=FALSE, fig.align='center', fig.height=6, fig.width=6-------------
 ### Summary
 summary(Mod1)
 
@@ -49,7 +49,7 @@ abline(b=1, a=0)
 ### Standard errors of ability parameter estimates
 plot(fscore$theta, fscore$theta_se)
 
-## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.6, fig.width=6------------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   lims(y = c(0, .75))+
   geom_line(
@@ -61,7 +61,7 @@ plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
+## ----fig.align='center', fig.asp=0.8, fig.width=6-----------------------------
 p1 <- plot_item(Mod1,1)
 p2 <- plot_item(Mod1,4)
 p3 <- plot_item(Mod1,8)
@@ -74,7 +74,7 @@ item_fit(Mod1)
 ## -----------------------------------------------------------------------------
 reliability(Mod1)
 
-## ---- fig.align='center', fig.asp=.7, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.7, fig.width=6------------------------------
 set.seed(1)
 selected_examinees <- sample(1:1000,6)
 post_sample <- 
@@ -92,7 +92,7 @@ ggplot(data=post_sample, mapping=aes(x=X))+
   facet_wrap(~ID, ncol=2)+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=.8, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.8, fig.width=6------------------------------
 ggplot()+
   stat_function(
     fun = inform_f_test,
@@ -141,12 +141,12 @@ data <- Alldata$data_P
 theta <- Alldata$theta
 colnames(data) <- paste0("item", 1:14)
 
-## ---- results='hide', message=FALSE-------------------------------------------
+## ----results='hide', message=FALSE--------------------------------------------
 Mod1 <- IRTest_Poly(data = data,
                     model = "GRM",
                     latent_dist = "KDE")
 
-## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
+## ----message=FALSE, fig.align='center', fig.height=6, fig.width=6-------------
 ### Summary
 summary(Mod1)
 
@@ -167,7 +167,7 @@ abline(b=1, a=0)
 ### Standard errors of ability parameter estimates
 plot(fscore$theta, fscore$theta_se)
 
-## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.6, fig.width=6------------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   stat_function(
     fun = dist2,
@@ -178,7 +178,7 @@ plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
+## ----fig.align='center', fig.asp=0.8, fig.width=6-----------------------------
 p1 <- plot_item(Mod1,1)
 p2 <- plot_item(Mod1,4)
 p3 <- plot_item(Mod1,8)
@@ -191,7 +191,7 @@ item_fit(Mod1)
 ## -----------------------------------------------------------------------------
 reliability(Mod1)
 
-## ---- fig.align='center', fig.asp=.7, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.7, fig.width=6------------------------------
 set.seed(1)
 selected_examinees <- sample(1:1000,6)
 post_sample <- 
@@ -209,7 +209,7 @@ ggplot(data=post_sample, mapping=aes(x=X))+
   facet_wrap(~ID, ncol=2)+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=.8, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.8, fig.width=6------------------------------
 ggplot()+
   stat_function(
     fun = inform_f_test,
@@ -263,11 +263,11 @@ data <- Alldata$data_C
 theta <- Alldata$theta
 colnames(data) <- paste0("item", 1:8)
 
-## ---- results='hide', message=FALSE-------------------------------------------
+## ----results='hide', message=FALSE--------------------------------------------
 Mod1 <- IRTest_Cont(data = data,
                     latent_dist = "KDE")
 
-## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
+## ----message=FALSE, fig.align='center', fig.height=6, fig.width=6-------------
 ### Summary
 summary(Mod1)
 
@@ -285,7 +285,7 @@ abline(b=1, a=0)
 ### Standard errors of ability parameter estimates
 plot(fscore$theta, fscore$theta_se)
 
-## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.6, fig.width=6------------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   lims(y = c(0, .75))+
   geom_line(
@@ -297,7 +297,7 @@ plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
+## ----fig.align='center', fig.asp=0.8, fig.width=6-----------------------------
 p1 <- plot_item(Mod1,1)
 p2 <- plot_item(Mod1,2)
 p3 <- plot_item(Mod1,3)
@@ -307,7 +307,7 @@ grid.arrange(p1, p2, p3, p4, ncol=2, nrow=2)
 ## -----------------------------------------------------------------------------
 reliability(Mod1)
 
-## ---- fig.align='center', fig.asp=.7, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.7, fig.width=6------------------------------
 set.seed(1)
 selected_examinees <- sample(1:1000,6)
 post_sample <- 
@@ -325,7 +325,7 @@ ggplot(data=post_sample, mapping=aes(x=X))+
   facet_wrap(~ID, ncol=2)+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=.8, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.8, fig.width=6------------------------------
 ggplot()+
   stat_function(
     fun = inform_f_test,
@@ -392,14 +392,14 @@ theta <- Alldata$theta
 colnames(DataD) <- paste0("item", 1:10)
 colnames(DataP) <- paste0("item", 1:5)
 
-## ---- results='hide', message=FALSE-------------------------------------------
+## ----results='hide', message=FALSE--------------------------------------------
 Mod1 <- IRTest_Mix(data_D = DataD,
                    data_P = DataP,
                    model_D = "2PL",
                    model_P = "GRM",
                    latent_dist = "KDE")
 
-## ---- message=FALSE, fig.align='center', fig.height=6, fig.width=6------------
+## ----message=FALSE, fig.align='center', fig.height=6, fig.width=6-------------
 ### Summary
 summary(Mod1)
 
@@ -420,7 +420,7 @@ abline(b=1, a=0)
 ### Standard errors of ability parameter estimates
 plot(fscore$theta, fscore$theta_se)
 
-## ---- fig.align='center', fig.asp=.6, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.6, fig.width=6------------------------------
 plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   stat_function(
     fun = dist2,
@@ -431,14 +431,14 @@ plot(Mod1, mapping = aes(colour="Estimated"), linewidth = 1) +
   labs(title="The estimated latent density using '2NM'", colour= "Type")+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
+## ----fig.align='center', fig.asp=0.8, fig.width=6-----------------------------
 p1 <- plot_item(Mod1,1, type="d")
 p2 <- plot_item(Mod1,4, type="d")
 p3 <- plot_item(Mod1,8, type="d")
 p4 <- plot_item(Mod1,10, type="d")
 grid.arrange(p1, p2, p3, p4, ncol=2, nrow=2)
 
-## ---- fig.align='center', fig.asp=0.8, fig.width=6----------------------------
+## ----fig.align='center', fig.asp=0.8, fig.width=6-----------------------------
 p1 <- plot_item(Mod1,1, type="p")
 p2 <- plot_item(Mod1,2, type="p")
 p3 <- plot_item(Mod1,3, type="p")
@@ -451,7 +451,7 @@ item_fit(Mod1)
 ## -----------------------------------------------------------------------------
 reliability(Mod1)
 
-## ---- fig.align='center', fig.asp=.7, fig.width=6-----------------------------
+## ----fig.align='center', fig.asp=.7, fig.width=6------------------------------
 set.seed(1)
 selected_examinees <- sample(1:1000,6)
 post_sample <- 
@@ -469,7 +469,7 @@ ggplot(data=post_sample, mapping=aes(x=X))+
   facet_wrap(~ID, ncol=2)+
   theme_bw()
 
-## ---- fig.align='center', fig.asp=.8, fig.width=8-----------------------------
+## ----fig.align='center', fig.asp=.8, fig.width=8------------------------------
 ggplot()+
   stat_function(
     fun = inform_f_test,
@@ -517,7 +517,7 @@ data <- DataGeneration(N=1000,
                        sd_ratio = 2,
                        prob = 0.3)$data_D
 
-## ---- results='hide', message=FALSE-------------------------------------------
+## ----results='hide', message=FALSE--------------------------------------------
 model_fits <- list()
 model_fits[[1]] <- IRTest_Dich(data)
 model_fits[[2]] <- IRTest_Dich(data, latent_dist = "EHM")

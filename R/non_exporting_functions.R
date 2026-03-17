@@ -2,7 +2,7 @@
 # citation
 #################################################################################################################
 .onAttach <- function(libname, pkgname) {
-  package_citation <- "Li, S. (2024). IRTest: Parameter estimation of item response theory with estimation of latent distribution (Version 2.1.0). R package. \n"
+  package_citation <- "Li, S. (2024) IRTest: An R package for item response theory with estimation of latent distribution. The R Journal. 16(4), 23-41. \n"
   package_URL <- "URL: https://CRAN.R-project.org/package=IRTest"
   packageStartupMessage("Thank you for using IRTest!")
   packageStartupMessage("Please cite the package as: \n")
@@ -74,6 +74,67 @@ add0 <- function(x){
   x[cbind(1:nrow(x),rowSums(!is.na(x))+1)] <- 0
   return(x)
 }
+
+#' @importFrom stats pbeta
+#'
+likert <- function(theta, a, b, nu, ncats=5, cut_score=NULL){
+  p <- P(theta = theta, a = a, b = b)
+  if(is.null(cut_score) & is.null(ncats)){
+    stop("Specify either ncat or cut_score.")
+  }else if(is.null(cut_score)){
+    cut_score <- (1:(ncats-1))/ncats
+  }else{
+    ncats <- length(cut_score)+1
+  }
+
+  if(is.matrix(cut_score)){
+    cut_score <- t(apply(cut_score, MARGIN=1, FUN=cut_trans))
+    probs <- matrix(nrow = nrow(cut_score), ncol = ncol(cut_score))
+    for(i in 1:ncol(cut_score)){
+      probs[,i] <- stats::pbeta(q = cut_score[,i],
+                         shape1 = p*nu,
+                         shape2 = (1-p)*nu)
+    }
+    return(add1(cbind(probs,NA))-cbind(0,probs))
+  }else if(length(theta)==1 & length(b)!=1){
+    probs <- matrix(nrow = length(b), ncol = ncats-1)
+
+    for(i in 1:length(cut_score)){
+      probs[,i] <- stats::pbeta(q = cut_score[i],
+                         shape1 = p*nu,
+                         shape2 = (1-p)*nu)
+    }
+    return(cbind(probs,1)-cbind(0,probs))
+  }else if(length(theta)==1){
+    probs <- stats::pbeta(q = cut_score,
+                   shape1 = p*nu,
+                   shape2 = (1-p)*nu)
+    return(c(probs,1)-c(0,probs))
+  }else if(length(theta)>1){
+    probs <- matrix(nrow = length(theta), ncol = ncats-1)
+
+    for(i in 1:length(cut_score)){
+      probs[,i] <- stats::pbeta(q = cut_score[i],
+                         shape1 = p*nu,
+                         shape2 = (1-p)*nu)
+    }
+    return(cbind(probs,1)-cbind(0,probs))
+  }
+}
+
+add1 <- function(x){
+  x[cbind(1:nrow(x),rowSums(!is.na(x))+1)] <- 1
+  return(x)
+}
+
+cut_trans <- function(x){
+  ind <- !is.na(x)
+  return(
+    cumsum(
+      c(1,exp(x[-length(x[ind])]))/sum(c(1,exp(x[ind])))
+    )
+  )
+}
 #################################################################################################################
 # Distribution
 #################################################################################################################
@@ -132,12 +193,16 @@ logLikeli <- function(item, data, theta){
   return(L)
 }
 
-logLikeli_Poly <- function(item, data, theta, model){
+logLikeli_Poly <- function(item, data, theta, model, ncats=NULL, ab_par=NULL){
   b_pars <- if(nrow(item)==1) item[,-1,drop=FALSE] else item[,-1]
   if(model %in% c("PCM", "GPCM")){
     pmat <- P_P(theta = theta, a = item[,1], b = b_pars)
   } else if(model == "GRM"){
     pmat <- P_G(theta = theta, a = item[,1], b = b_pars)
+  } else if(model == "likert"){
+    pmat <- likert(theta = theta, a = item[,1], b = item[,2], nu = exp(item[,3]), ncats=ncats)
+  } else if(model == "likert2"){
+    pmat <- likert(theta = theta, a = ab_par[,1], b = ab_par[,2], nu = exp(item[,1]), cut_score = item[,-1])
   }
 
   L <- NULL
@@ -211,7 +276,7 @@ Estep <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
 }
 
 Estep_Poly <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
-                       sd_ratio = 1,Xk=NULL, Ak=NULL, model){
+                       sd_ratio = 1,Xk=NULL, Ak=NULL, model, ncats=NULL, ab_par=NULL){
   if(is.null(Xk)) {
     # quadrature points
     Xk <- seq(range[1],range[2],length=q)
@@ -223,7 +288,7 @@ Estep_Poly <- function(item, data, range = c(-4,4), q = 100, prob = 0.5, d = 0,
   Pk <- matrix(nrow = nrow(data), ncol = q)
   for(i in 1:q){
     # weighted likelihood where the weight is the latent distribution
-    Pk[,i] <- exp(logLikeli_Poly(item = item, data = data, theta = Xk[i], model))*Ak[i]
+    Pk[,i] <- exp(logLikeli_Poly(item = item, data = data, theta = Xk[i], model, ncats, ab_par))*Ak[i]
   }
   categ <- max(data, na.rm = TRUE)+1
   Pk <- Pk/rowSums(Pk) # posterior weights
@@ -294,7 +359,7 @@ Estep_Cont <- function(item, data, range = c(-4,4), q = 81, prob = 0.5, d = 0,
 #################################################################################################################
 # M1 step
 #################################################################################################################
-M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
+M1step <- function(E, item, model, max_iter=5, threshold=1e-7, EMiter){
   nitem <- nrow(item)
   item_estimated <- item
   se <- matrix(nrow = nrow(item), ncol = 3)
@@ -428,7 +493,7 @@ M1step <- function(E, item, model, max_iter=10, threshold=1e-7, EMiter){
 }
 
 
-Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter){
+Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter, ncats=NULL, ab_par=NULL){
   nitem <- nrow(item)
   item_estimated <- item
   se <- matrix(nrow = nrow(item), ncol = ncol(item))
@@ -437,6 +502,18 @@ Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter
   rik <- E$rik_P
   N <- nrow(Pk)
   q <- length(X)
+
+  if(any(model %in% c("likert","likert2"))){
+    if(length(ncats)==1){
+      ncats <- rep(ncats, nitem)
+    }
+    if(any(model %in% c("likert"))){
+      ngrid <- 100
+    }else if(any(model %in% c("likert2"))){
+      ngrid <- 1000
+    }
+    grids <- seq(1/2/ngrid, 1-1/2/ngrid, length=ngrid)
+  }
   ####item parameter estimation####
   for(i in 1:nitem){
     if(sum(rik[i,,])!=0){
@@ -649,6 +726,160 @@ Mstep_Poly <- function(E, item, model="GPCM", max_iter=5, threshold=1e-7, EMiter
         item_estimated[i,1:npar] <- par
         se[i,1:npar] <- sqrt(-diag(solve(IM))) # asymptotic S.E.
 
+      } else if(model %in% c("likert")){
+        iter <- 0
+        div <- 3
+        par <- item[i,]
+        f <- rowSums(rik[i,,])
+
+        cut_score <- (1:(ncats[i]-1))/ncats[i]
+        ind_cat <- as.numeric(cut(grids,breaks = c(0,cut_score,1),labels = 1:ncats[i]))
+        ####Newton-Raphson####
+        repeat{
+          iter <- iter+1
+          mu <- P(X, par[1], par[2])
+          nu <- exp(par[3])
+          p0 <- likert(X, a = par[1], b = par[2], nu = nu, ncats = ncats[i])
+
+          pmat <- t(outer(grids, nu*mu-1, FUN = "^")*outer(1-grids, nu*(1-mu)-1, FUN = "^"))/beta(nu*mu,nu*(1-mu)) # probability matrix wo the normalizing factor
+          l1mu <- nu*pmat*t(outer(log(grids/(1-grids)), digamma(nu*mu)-digamma(nu*(1-mu)), FUN = "-"))
+          l1xi <- nu*(digamma(nu)+
+                        mu*t(outer(log(grids), digamma(nu*mu), FUN = "-"))+
+                        (1-mu)*t(outer(log(1-grids), digamma(nu*(1-mu)), FUN = "-"))
+          )*pmat
+          l1m <- matrix(ncol = ncats[i], nrow = q)
+          l1x <- matrix(ncol = ncats[i], nrow = q)
+          for(c in 1:ncats[i]){
+            l1m[,c] <- rowSums(l1mu[,ind_cat==c])*0.01
+            l1x[,c] <- rowSums(l1xi[,ind_cat==c])*0.01
+          }
+          # l1m <- l1m
+          # l1x <- nu/beta(nu*mu,nu*(1-mu))*l1x
+          l1a <- (X-par[2])*mu*(1-mu)*l1m
+          l1b <- -par[1]*mu*(1-mu)*l1m
+
+          Grad <- c(
+            sum(l1a*rik[i,,]/p0),
+            sum(l1b*rik[i,,]/p0),
+            sum(l1x*rik[i,,]/p0)
+          )
+
+          L2aa <- rowSums(l1a^2  /p0)%*%f
+          L2ab <- rowSums(l1a*l1b/p0)%*%f
+          L2bb <- rowSums(l1b^2  /p0)%*%f
+          L2xi <- rowSums(l1x^2  /p0)%*%f
+          L2ax <- rowSums(l1a*l1x/p0)%*%f
+          L2bx <- rowSums(l1b*l1x/p0)%*%f
+
+          IM <- solve(matrix(data = c(
+            L2aa, L2ab, L2ax,
+            L2ab, L2bb, L2bx,
+            L2ax, L2bx, L2xi
+          ), nrow = 3))
+
+          diff <- -IM%*%Grad
+
+          if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+            par <- par
+          } else{
+            if( sum(abs(diff)) > div){
+              if((par[1]-diff[1]/2)<0){
+                par <- par - diff/sum(abs(diff))
+              }else{
+                par <- par - diff/2
+              }
+            } else {
+              par <- par - diff
+              div <- sum(abs(diff))
+            }
+          }
+          if( div <= threshold | iter > max_iter) break
+        }
+        item_estimated[i,] <- par
+        se[i,] <- sqrt(diag(IM)) # asymptotic S.E.
+
+      } else if(model %in% c("likert2")){
+        iter <- 0
+        div <- 1
+        par <- item[i,]
+        par <- par[!is.na(par)]
+        npar <- length(par)
+        ncut <- npar-1
+        ab <- ab_par[i,]
+        f <- rowSums(rik[i,,])
+
+        ####Newton-Raphson####
+        repeat{
+          iter <- iter+1
+          cut_score <- cut_trans(par[-1])
+          ind_cat <- as.numeric(cut(grids,breaks = c(0,cut_score,1),labels = 1:npar))
+
+          mu <- P(X, ab[1], ab[2])
+          nu <- exp(par[1])
+          p0 <- likert(X, a = ab[1], b = ab[2], nu = nu, cut_score = cut_score)
+
+          beta_vals <- matrix(nrow = q, ncol=ncut)
+          for(b in 1:ncut){
+            beta_vals[,b] <- dbeta(cut_score[b], shape1 = nu*mu, shape2 = nu*(1-mu))
+          }
+
+          l1s <- list()
+
+          # nu
+          pmat <- t(outer(grids, nu*mu-1, FUN = "^")*outer(1-grids, nu*(1-mu)-1, FUN = "^"))/beta(nu*mu,nu*(1-mu)) # probability matrix wo the normalizing factor
+          l1xi <- nu*(digamma(nu)+
+                        mu*t(outer(log(grids), digamma(nu*mu), FUN = "-"))+
+                        (1-mu)*t(outer(log(1-grids), digamma(nu*(1-mu)), FUN = "-"))
+          )*pmat
+          l1x <- matrix(ncol = npar, nrow = q)
+          for(c in 1:(npar)){
+            l1x[,c] <- rowSums(l1xi[,ind_cat==c])/ngrid
+          }
+          l1s[[1]] <- l1x
+
+          # thresholds
+          for(b in 1:ncut){
+            ind <- c(rep(0,b),rep(1,ncut-b))
+            temp <- t((ind-cut_score)*t(beta_vals))*cut_score[1]*exp(par[b+1])
+            l1s[[b+1]] <- cbind(temp,0)-cbind(0,temp)
+          }
+
+          # derivatives
+          L1 <- c()
+          L2 <- matrix(nrow = npar, ncol = npar)
+          for(r in 1:npar){
+            L1 <- append(
+              L1,
+              sum(l1s[[r]]*rik[i,,1:npar]/p0)
+            )
+            for(c in 1:npar){
+              if(r>=c){
+                L2[r,c] <- rowSums(l1s[[r]]*l1s[[c]]/p0)%*%f
+                L2[c,r] <- L2[r,c]
+              }
+            }
+          }
+          # L1[1] <- L1[1]+par[1]-2
+          # L2[1,1] <- L2[1,1]+1
+          IM <- solve(L2)
+          diff <- L1%*%IM
+
+          if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+            par <- par
+          } else{
+            if( sum(abs(diff)) > div){
+              stepsize <- max(max(abs(diff)),2)
+              par <- par + diff/stepsize
+            } else {
+              par <- par + diff
+              div <- sum(abs(diff))
+            }
+          }
+          if( div <= threshold | iter > max_iter) break
+        }
+        item_estimated[i,1:npar] <- par
+        se[i,1:npar] <- sqrt(diag(IM)) # asymptotic S.E.
+
       } else warning("model is incorrect or unspecified.")
     }
   }
@@ -678,7 +909,7 @@ PDs <- function(probab, param, pmat, pcummat, a_supp, par, tcum){
 #   return(list(item_estimated,NULL))
 # }
 
-Mstep_Cont <- function(E, item, data, threshold = 1e-7, max_iter = 20){
+Mstep_Cont <- function(E, item, data, model, threshold = 1e-7, max_iter = 20){
   nitem <- nrow(item)
   item_estimated <- item
   se <- matrix(nrow = nrow(item), ncol = ncol(item))
@@ -687,33 +918,56 @@ Mstep_Cont <- function(E, item, data, threshold = 1e-7, max_iter = 20){
     par[3] <- log(par[3])
     iter <- 0
     div <- 3
-    repeat{
-      iter <- iter + 1
+    if(model == 1){
+      repeat{
+        iter <- iter + 1
 
-      l1l2 <- cont_L1L2(item = par, Xk = E$Xk, data = data[,i], Pk = E$Pk)
-      diff <- l1l2[[1]]%*%l1l2[[2]]
+        l1l2 <- cont_L1L2(item = par, Xk = E$Xk, data = data[,i], Pk = E$Pk)
+        diff <- (l1l2[[1]]%*%l1l2[[2]])[-1]
 
-      if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
-        par <- par
-      } else{
-        if( sum(abs(diff)) > div){
-          if((max(abs(diff[-1]))/abs(diff[1])>1000) & (abs(par[1]) >= abs(par[1]-diff[1]))){
-            par[1] <- -par[1]
-          } else{
-            par <- par-diff/2
+        if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+          par[-1] <- par[-1]
+        } else{
+          if( sum(abs(diff)) > div){
+            par[-1] <- par[-1]-diff/2
+          } else {
+            par[-1] <- par[-1]-diff
+            div <- sum(abs(diff))
           }
-        } else {
-          par <- par-diff
-          div <- sum(abs(diff))
         }
+        if( div <= threshold | iter > max_iter) break
       }
-      if( div <= threshold | iter > max_iter) break
-    }
-    par[3] <- exp(par[3])
-    item_estimated[i,] <- par
-    se[i,] <- suppressWarnings(sqrt(-diag(l1l2[[2]])))
-  }
+      par[3] <- exp(par[3])
+      item_estimated[i,] <- par
+      se[i,-1] <- suppressWarnings(sqrt(-diag(l1l2[[2]])))[-1]
+    }else if(model == 2){
+      repeat{
+        iter <- iter + 1
 
+        l1l2 <- cont_L1L2(item = par, Xk = E$Xk, data = data[,i], Pk = E$Pk)
+        diff <- l1l2[[1]]%*%l1l2[[2]]
+
+        if(is.infinite(sum(abs(diff)))|is.na(sum(abs(diff)))){
+          par <- par
+        } else{
+          if( sum(abs(diff)) > div){
+            if((max(abs(diff[-1]))/abs(diff[1])>1000) & (abs(par[1]) >= abs(par[1]-diff[1]))){
+              par[1] <- -par[1]
+            } else{
+              par <- par-diff/2
+            }
+          } else {
+            par <- par-diff
+            div <- sum(abs(diff))
+          }
+        }
+        if( div <= threshold | iter > max_iter) break
+      }
+      par[3] <- exp(par[3])
+      item_estimated[i,] <- par
+      se[i,] <- suppressWarnings(sqrt(-diag(l1l2[[2]])))
+    }
+  }
   return(list(item_estimated, se))
 }
 
@@ -837,7 +1091,7 @@ M2step <- function(E, max_iter=200){
          d_raw=d_raw,
          d=d,
          sd_ratio=sd_ratio,
-         m=0,
+         m=prob*m1+(1-prob)*m2,
          s=s2total
          )
     )
@@ -1276,6 +1530,7 @@ latent_dist_est <- function(method, Xk, posterior, range,
                     from = range[1],
                     to=range[2])
     lin <- lin_inex(Xk, SJPI$y/sum(SJPI$y), range = range)
+    lin$m <- post_den$m
     lin$s <- post_den$s
     par <- c(SJPI$bw, SJPI$n)
   }
@@ -1292,6 +1547,7 @@ latent_dist_est <- function(method, Xk, posterior, range,
     post_den2 <- dcurver::ddc(x = Xk, phi = par)
     post_den2 <- post_den2/sum(post_den2)
     lin <- lin_inex(Xk, post_den2, range = range, rule = 2)
+    lin$m <- post_den$m
     lin$s <- post_den$s
   }
   if(method=='LLS'){
@@ -1305,6 +1561,7 @@ latent_dist_est <- function(method, Xk, posterior, range,
     post_den2 <- LLS$freq/N
     par <- LLS$beta
     lin <- lin_inex(Xk, post_den2, range = range, rule = 2)
+    lin$m <- post_den$m
     lin$s <- post_den$s
   }
 
